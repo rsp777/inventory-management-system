@@ -1,30 +1,72 @@
 package com.pawar.inventory.model;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.relational.core.mapping.Table;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+
+@Entity
+@Table(name = "inventory")
 public class Inventory {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int inventory_id;
-	private String lpn;
-	private String item_name;
+	
+	@ManyToOne
+	@JoinColumn(name = "lpn_id")
+	private Lpn lpn;
+	
+	@ManyToOne
+	@JoinColumn(name = "item_id")
+	private Item item;
 	private double on_hand_qty;
-	private String locn_brcd;
+	
+	@ManyToOne
+	@JoinColumn(name = "locn_id")
+	private Location location;
+	
+	@Column(name = "locn_class")
 	private String locn_class;
-	private String created_dttm;
-	private String last_updated_dttm;
+	
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+	@JsonProperty("created_dttm")
+	@Column(name = "created_dttm")
+	private LocalDateTime created_dttm;
+	
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+	@JsonProperty("last_updated_dttm")
+	@Column(name = "last_updated_dttm")
+	private LocalDateTime last_updated_dttm;
+	
+	@Column(name = "created_source")
 	private String created_source;
+	
+	@Column(name = "last_updated_source")
 	private String last_updated_source;
 
 	public Inventory() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Inventory(int inventory_id, String lpn, String item_name, double on_hand_qty, String locn_brcd,
-			String locn_class, String created_dttm, String last_updated_dttm, String created_source,
+	public Inventory(int inventory_id, Lpn lpn, Item item, double on_hand_qty, Location location,
+			String locn_class, LocalDateTime created_dttm, LocalDateTime last_updated_dttm, String created_source,
 			String last_updated_source) {
 		this.inventory_id = inventory_id;
 		this.lpn = lpn;
-		this.item_name = item_name;
+		this.item = item;
 		this.on_hand_qty = on_hand_qty;
-		this.locn_brcd = locn_brcd;
+		this.location = location;
 		this.locn_class = locn_class;
 		this.created_dttm = created_dttm;
 		this.last_updated_dttm = last_updated_dttm;
@@ -40,20 +82,20 @@ public class Inventory {
 		this.inventory_id = inventory_id;
 	}
 
-	public String getLpn() {
+	public Lpn getLpn() {
 		return lpn;
 	}
 
-	public void setLpn(String lpn) {
+	public void setLpn(Lpn lpn) {
 		this.lpn = lpn;
 	}
 
-	public String getItem_name() {
-		return item_name;
+	public Item getItem() {
+		return item;
 	}
 
-	public void setItem_name(String item_name) {
-		this.item_name = item_name;
+	public void setItem(Item item) {
+		this.item = item;
 	}
 
 	public double getOn_hand_qty() {
@@ -64,12 +106,12 @@ public class Inventory {
 		this.on_hand_qty = on_hand_qty;
 	}
 
-	public String getLocn_brcd() {
-		return locn_brcd;
+	public Location getLocation() {
+		return location;
 	}
 
-	public void setLocn_brcd(String locn_brcd) {
-		this.locn_brcd = locn_brcd;
+	public void setLocation(Location location) {
+		this.location = location;
 	}
 
 	public String getLocn_class() {
@@ -80,19 +122,19 @@ public class Inventory {
 		this.locn_class = locn_class;
 	}
 
-	public String getCreated_dttm() {
+	public LocalDateTime getCreated_dttm() {
 		return created_dttm;
 	}
 
-	public void setCreated_dttm(String created_dttm) {
+	public void setCreated_dttm(LocalDateTime created_dttm) {
 		this.created_dttm = created_dttm;
 	}
 
-	public String getLast_updated_dttm() {
+	public LocalDateTime getLast_updated_dttm() {
 		return last_updated_dttm;
 	}
 
-	public void setLast_updated_dttm(String last_updated_dttm) {
+	public void setLast_updated_dttm(LocalDateTime last_updated_dttm) {
 		this.last_updated_dttm = last_updated_dttm;
 	}
 
@@ -114,8 +156,7 @@ public class Inventory {
 
 	@Override
 	public String toString() {
-		return "Inventory [inventory_id=" + inventory_id + ", lpn=" + lpn + ", item_name=" + item_name
-				+ ", on_hand_qty=" + on_hand_qty + ", locn_brcd=" + locn_brcd + ", locn_class=" + locn_class
+		return "Inventory [inventory_id=" + inventory_id + ", lpn=" + lpn + ", item=" + item
 				+ ", created_dttm=" + created_dttm + ", last_updated_dttm=" + last_updated_dttm + ", created_source="
 				+ created_source + ", last_updated_source=" + last_updated_source + "]";
 	}

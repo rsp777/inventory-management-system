@@ -1,29 +1,79 @@
 package com.pawar.inventory.model;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.springframework.data.relational.core.mapping.Table;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+
+@Entity
+@Table(name = "item")
 public class Item {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int item_id;
-	private String item_name;
+
+	@Column(name = "item_name")
+	private String itemName;
+
+	@Column(name = "unit_length")
 	private double unit_length;
+
+	@Column(name = "unit_width")
 	private double unit_width;
+
+	@Column(name = "unit_height")
 	private double unit_height;
+
+	@Column(name = "unit_volume")
 	private double unit_volume;
+
+	@Column(name = "description")
 	private String description;
-	private String category;
-	private String created_dttm;
-	private String last_updated_dttm;
+
+	@ManyToOne
+	@JoinColumn(name = "category_id")
+	private Category category;
+
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+	@JsonProperty("created_dttm")
+	@Column(name = "created_dttm")
+//	@JdbcTypeCode (SqlTypes.DATE)
+	private LocalDateTime created_dttm;
+
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+	@JsonProperty("last_updated_dttm")
+	@Column(name = "last_updated_dttm")
+//	@JdbcTypeCode (SqlTypes.DATE)
+	private LocalDateTime last_updated_dttm;
+
+	@Column(name = "created_source")
 	private String created_source;
+
+	@Column(name = "last_updated_source")
 	private String last_updated_source;
 
 	public Item() {
 	}
 
-	public Item(int item_id, String item_name, double unit_length, double unit_width, double unit_height,
-			double unit_volume, String description, String category, String created_dttm, String last_updated_dttm,
-			String created_source, String last_updated_source) {
+	public Item(int item_id, String itemName, double unit_length, double unit_width, double unit_height,
+			double unit_volume, String description, Category category, LocalDateTime created_dttm,
+			LocalDateTime last_updated_dttm, String created_source, String last_updated_source) {
 		super();
 		this.item_id = item_id;
-		this.item_name = item_name;
+		this.itemName = itemName;
 		this.unit_length = unit_length;
 		this.unit_width = unit_width;
 		this.unit_height = unit_height;
@@ -45,11 +95,11 @@ public class Item {
 	}
 
 	public String getItem_name() {
-		return item_name;
+		return itemName;
 	}
 
-	public void setItem_name(String item_name) {
-		this.item_name = item_name;
+	public void setItem_name(String itemName) {
+		this.itemName = itemName;
 	}
 
 	public double getUnit_length() {
@@ -92,27 +142,27 @@ public class Item {
 		this.description = description;
 	}
 
-	public String getCategory() {
+	public Category getCategory() {
 		return category;
 	}
 
-	public void setCategory(String category) {
+	public void setCategory(Category category) {
 		this.category = category;
 	}
 
-	public String getCreated_dttm() {
+	public LocalDateTime getCreated_dttm() {
 		return created_dttm;
 	}
 
-	public void setCreated_dttm(String created_dttm) {
+	public void setCreated_dttm(LocalDateTime created_dttm) {
 		this.created_dttm = created_dttm;
 	}
 
-	public String getLast_updated_dttm() {
+	public LocalDateTime getLast_updated_dttm() {
 		return last_updated_dttm;
 	}
 
-	public void setLast_updated_dttm(String last_updated_dttm) {
+	public void setLast_updated_dttm(LocalDateTime last_updated_dttm) {
 		this.last_updated_dttm = last_updated_dttm;
 	}
 
@@ -134,11 +184,11 @@ public class Item {
 
 	@Override
 	public String toString() {
-		return "Item [item_id=" + item_id + ", item_name=" + item_name + ", unit_length=" + unit_length
-				+ ", unit_width=" + unit_width + ", unit_height=" + unit_height + ", unit_volume=" + unit_volume
-				+ ", description=" + description + ", category=" + category + ", created_dttm=" + created_dttm
-				+ ", last_updated_dttm=" + last_updated_dttm + ", created_source=" + created_source
-				+ ", last_updated_source=" + last_updated_source + "]";
+		return "Item [item_id=" + item_id + ", itemName=" + itemName + ", unit_length=" + unit_length + ", unit_width="
+				+ unit_width + ", unit_height=" + unit_height + ", unit_volume=" + unit_volume + ", description="
+				+ description + ", category=" + category + ", created_dttm=" + created_dttm + ", last_updated_dttm="
+				+ last_updated_dttm + ", created_source=" + created_source + ", last_updated_source="
+				+ last_updated_source + "]";
 	}
 
 }
