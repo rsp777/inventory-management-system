@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
@@ -61,7 +62,7 @@ public class InventoryService {
 	}
 
 	@Transactional
-	public List<Inventory> getInventorybyItem(String item_name) {
+	public List<Inventory> getInventorybyItem(String item_name) throws ItemNotFoundException  {
 		// TODO Auto-generated method stub
 		Item item = itemService.findItemByname(item_name);
 		return inventoryRepository.getInventorybyItem(item);

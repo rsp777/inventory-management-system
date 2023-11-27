@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.lpn.LpnRepository;
@@ -21,7 +22,7 @@ public class LpnService {
 	
 	
 	@Transactional
-	public Lpn createLpn(Lpn lpn, Item item) {
+	public Lpn createLpn(Lpn lpn, Item item) throws ItemNotFoundException {
 
 		return lpnRepository.createLpn(lpn,item);
 
@@ -44,12 +45,12 @@ public class LpnService {
 		return lpnRepository.findLpnById(lpn_id);
 	}
 
-	public Lpn updateLpnByLpnId(int lpn_id, Lpn lpn) {
+	public Lpn updateLpnByLpnId(int lpn_id, Lpn lpn) throws ItemNotFoundException {
 		// TODO Auto-generated method stub
 		return lpnRepository.updateLpnByLpnId(lpn_id,lpn);
 	}
 
-	public Lpn updateLpnByLpnBarcode(String lpn_name, Lpn lpn) {
+	public Lpn updateLpnByLpnBarcode(String lpn_name, Lpn lpn) throws ItemNotFoundException {
 		// TODO Auto-generated method stub
 		return lpnRepository.updateLpnByLpnBarcode(lpn_name,lpn);
 	}

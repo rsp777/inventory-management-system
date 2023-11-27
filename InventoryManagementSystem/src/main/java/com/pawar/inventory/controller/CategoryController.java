@@ -28,8 +28,14 @@ public class CategoryController {
 	
 	private final static Logger logger = Logger.getLogger(CategoryController.class.getName());
 
-	@Autowired
+
 	public CategoryService categoryService;
+	
+	 @Autowired
+	    public CategoryController(CategoryService categoryService) {
+	        this.categoryService = categoryService;
+	    }
+	
 	
 	@PostMapping("/add")
 	public ResponseEntity<?> createCategory(@RequestBody Category category){
@@ -40,7 +46,7 @@ public class CategoryController {
 		
 	}
 	
-	@GetMapping("/category-list")
+	@GetMapping("/list")
 	public Iterable<Category> getCategories(){
 		Iterable<Category> categories = categoryService.getfindAllCategories();
 		return categories;

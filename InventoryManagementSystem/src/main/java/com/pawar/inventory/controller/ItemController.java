@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.service.ItemService;
@@ -70,10 +71,16 @@ public class ItemController {
 	}
 	
 
-	@GetMapping("/list/by-name/{itemName}")
-	public Item findItemByName(@PathVariable String itemName) {
-		return itemService.findItemByname(itemName);
-	}
+		@GetMapping("/list/by-name/{itemName}")
+		public ResponseEntity<Item> findItemByName(@PathVariable String itemName) {
+			try {
+		        Item item = itemService.findItemByname(itemName);
+		        return new ResponseEntity<>(item, HttpStatus.OK);
+		    } catch (ItemNotFoundException e) {
+		        // Log the exception and return a user-friendly message
+		        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		    }
+		}
 	
 	@PutMapping("/update/by-id/{item_id}")
 	public Item updateItemByItemId(@PathVariable int item_id,@RequestBody Item item){
@@ -85,7 +92,12 @@ public class ItemController {
 	@PutMapping("/update/by-name/{itemName}")
 	public Item updateItemByItemName(@PathVariable String itemName,@RequestBody Item item){
 		logger.info("Update this item : "+item);
-		item = itemService.updateItemByItemName(itemName,item);
+		try {
+			item = itemService.updateItemByItemName(itemName,item);
+		} catch (ItemNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return item;
 	}
 	
@@ -97,7 +109,15 @@ public class ItemController {
 	
 	@DeleteMapping("/delete/by-name/{itemName}")
 	public Item deleteItemByItemName(@PathVariable String itemName){
-		Item item = itemService.deleteItemByItemName(itemName);
-		return item;
+		Item item;
+		try {
+			item = itemService.deleteItemByItemName(itemName);
+			return item;
+		} catch (ItemNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		
 	}
 }

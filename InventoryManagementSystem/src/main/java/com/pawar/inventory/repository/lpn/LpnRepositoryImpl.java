@@ -10,6 +10,7 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
@@ -37,7 +38,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	}
 
 	@Override
-	public Lpn createLpn(Lpn lpn, Item item) {
+	public Lpn createLpn(Lpn lpn, Item item) throws ItemNotFoundException {
 
 		Item fetchedItem = itemRepository.findItemByname(item.getItem_name());
 		logger.info("" + fetchedItem);
@@ -63,6 +64,17 @@ public class LpnRepositoryImpl implements LpnRepository {
 			currentSession.save(lpn);
 		}
 		lpn.setItem(fetchedItem);
+		lpn.setLength(fetchedItem.getUnit_length());
+		lpn.setWidth(fetchedItem.getUnit_width());
+		lpn.setHeight(fetchedItem.getUnit_height());
+		lpn.setVolume(fetchedItem.getUnit_height());
+		lpn.setCreated_source("IMS");
+		lpn.setCreated_dttm(LocalDateTime.now());
+		lpn.setLast_updated_dttm(LocalDateTime.now());
+		lpn.setLast_updated_source("IMS");
+		
+		logger.info("Lpn data : "+lpn.getCreated_source());
+		
 		currentSession.saveOrUpdate(lpn);
 
 		logger.info("Lpn successfully added : " + lpn);
@@ -116,7 +128,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	}
 
 	@Override
-	public Lpn updateLpnByLpnId(int lpn_id, Lpn lpn) {
+	public Lpn updateLpnByLpnId(int lpn_id, Lpn lpn) throws ItemNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Lpn existingLpn = findLpnById(lpn_id);
 		Item existingItem = itemRepository.findItemByname(lpn.getItem().getItem_name());
@@ -140,7 +152,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	}
 
 	@Override
-	public Lpn updateLpnByLpnBarcode(String lpn_name, Lpn lpn) {
+	public Lpn updateLpnByLpnBarcode(String lpn_name, Lpn lpn) throws ItemNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Lpn existingLpn = getLpnByName(lpn_name);
 		Item existingItem = itemRepository.findItemByname(lpn.getItem().getItem_name());

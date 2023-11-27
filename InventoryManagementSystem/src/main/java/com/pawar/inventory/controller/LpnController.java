@@ -1,10 +1,12 @@
 package com.pawar.inventory.controller;
 
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.model.Lpn;
@@ -50,8 +53,19 @@ public class LpnController {
 		
 		logger.info(""+item);
 		
-		lpnService.createLpn(lpn,item);
-		return ResponseEntity.ok("Lpn Added Successfully : ");
+		try {
+			Lpn lpn2 = lpnService.createLpn(lpn,item);
+			return new ResponseEntity<Lpn>(lpn2, HttpStatus.OK);
+		} 
+		catch (ItemNotFoundException e) {
+			 logger.log(Level.SEVERE, "ItemNotFoundException occurred: ", e);    
+			 return new ResponseEntity<String>("Item Not Found: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        } 
+		catch (Exception e) {
+        	logger.log(Level.SEVERE, "Exception occurred: ", e);
+        	return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+		
 
 	}
 	
@@ -76,14 +90,24 @@ public class LpnController {
 	@PutMapping("/update/by-id/{lpn_id}")
 	public Lpn updateLpnByLpnId(@PathVariable int lpn_id,@RequestBody Lpn lpn){
 		logger.info("Update this lpn : "+lpn);
-		lpn = lpnService.updateLpnByLpnId(lpn_id,lpn);
+		try {
+			lpn = lpnService.updateLpnByLpnId(lpn_id,lpn);
+		} catch (ItemNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return lpn;
 	}
 	
 	@PutMapping("/update/by-name/{lpn_name}")
 	public Lpn updateLpnByLpnBarcode(@PathVariable String lpn_name,@RequestBody Lpn lpn){
 		logger.info("Update this lpn : "+lpn);
-		lpn = lpnService.updateLpnByLpnBarcode(lpn_name,lpn);
+		try {
+			lpn = lpnService.updateLpnByLpnBarcode(lpn_name,lpn);
+		} catch (ItemNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return lpn;
 	}
 	

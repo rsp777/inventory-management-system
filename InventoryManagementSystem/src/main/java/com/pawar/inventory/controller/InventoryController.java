@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import org.apache.http.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
@@ -103,9 +105,14 @@ public class InventoryController {
 	}
 	
 	@GetMapping("/list/by-name/{item_name}")
-	public List<Inventory> getInventorybyItem(@PathVariable String item_name) {
-		List<Inventory> inventories = inventoryService.getInventorybyItem(item_name);
-		return inventories;
+	public ResponseEntity<List<Inventory>> getInventorybyItem(@PathVariable String item_name) {
+		 try {
+		        List<Inventory> inventories = inventoryService.getInventorybyItem(item_name);
+		        return new ResponseEntity<>(inventories, HttpStatus.OK);
+		    } catch (ItemNotFoundException e) {
+		        // Log the exception and return a user-friendly message
+		        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		    }
 	}
 	
 	@GetMapping("/list/by-lpn/{lpn_name}")

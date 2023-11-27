@@ -12,6 +12,7 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.repository.category.CategoryRepository;
@@ -44,7 +45,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 		}
 
 		if (item.getUnit_length() <= 0 || item.getUnit_width() <= 0 || item.getUnit_height() <= 0
-				|| item.getUnit_volume() <= 0) {
+				) {
 			logger.info("Item dimensions and volume must be greater than zero.");
 
 		}
@@ -58,7 +59,19 @@ public class ItemRepositoryImpl implements ItemRepository {
 		if (fetchedCategory == null) {
 			currentSession.save(category);
 		}
+		item.setUnit_volume(item.getUnit_length()*item.getUnit_width()*item.getUnit_height());
 		item.setCategory(fetchedCategory);
+		item.setCreated_dttm(LocalDateTime.now());
+		item.setLast_updated_dttm(LocalDateTime.now());
+		System.out.println("item.getLast_updated_source() != null : "+item.getLast_updated_source() != null);
+		if (item.getLast_updated_source()!= null && item.getCreated_source()!= null) {
+			item.setCreated_source(item.getCreated_source());
+			item.setLast_updated_source(item.getLast_updated_source());
+		} 
+		else {
+			item.setCreated_source("Item Management");
+			item.setLast_updated_source("Item Management");
+		}
 		currentSession.saveOrUpdate(item);
 
 		logger.info("Item successfully added : " + item);
@@ -80,19 +93,20 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item findItemByname(String itemName) {
+	public Item findItemByname(String itemName) throws ItemNotFoundException{
 		logger.info("" + itemName);
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Item> query = currentSession.createQuery("from Item where itemName = :itemName", Item.class);
 		query.setParameter("itemName", itemName);
-
-		try {
-			logger.info("Query : " + query.getSingleResult());
-			return query.getSingleResult();
-		} catch (NoResultException e) {
-			// Handle the exception here
-			return null;
-		}
+		
+		List<Item> items = query.getResultList();
+		if (!items.isEmpty()) {
+	        Item item = items.get(0);
+	        logger.info("Item : " + item);
+	        return item;
+	    } else {
+	        throw new ItemNotFoundException("Item Not Found : "+itemName);
+	    }  
 	}
 
 	@Override
@@ -130,7 +144,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item updateItemByItemName(String item_name, Item item) {
+	public Item updateItemByItemName(String item_name, Item item) throws ItemNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Item existingItem = findItemByname(item_name);
 		Category existingCategory = categoryRepository.getCategoryByName(item.getCategory().getCategory_name());
@@ -157,7 +171,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item deleteItemByItemName(String itemName) {
+	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException {
 		Item item = findItemByname(itemName);
 		logger.info("Item to delete for : " + item);
 		Session currentSession = entityManager.unwrap(Session.class);
