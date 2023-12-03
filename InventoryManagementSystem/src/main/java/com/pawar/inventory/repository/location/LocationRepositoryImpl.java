@@ -19,11 +19,10 @@ import jakarta.persistence.NoResultException;
 
 @Repository
 public class LocationRepositoryImpl implements LocationRepository {
-	
+
 	private final static Logger logger = Logger.getLogger(LocationRepositoryImpl.class.getName());
 	private EntityManager entityManager;
-	
-	
+
 	public LocationRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
 	}
@@ -31,23 +30,35 @@ public class LocationRepositoryImpl implements LocationRepository {
 	@Override
 	public Location addLocation(Location location) {
 		if (location != null) {
-			
-			logger.info("Location to be created : "+location);
+
+			logger.info("Location to be created : " + location);
 			if (location.getLocn_brcd() == null || location.getLocn_class() == null) {
 				logger.info("Location barcode and class cannot be null.");
 				return null;
 			}
 
-			if (location.getLength() <= 0 || location.getWidth() <= 0 || location.getHeight() <= 0 || location.getMax_volume() <= 0 || location.getMax_weight() <= 0) {
+			if (location.getLength() <= 0 || location.getWidth() <= 0 || location.getHeight() <= 0
+					|| location.getMax_volume() <= 0 || location.getMax_weight() <= 0) {
 				logger.info("Location dimensions, volume and weight must be greater than zero.");
 				return null;
 			}
-			
+
 			Session currentSession = entityManager.unwrap(Session.class);
 			Query<Category> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Category.class);
+			location.setCreated_dttm(LocalDateTime.now());
+			location.setLast_updated_dttm(LocalDateTime.now());
+			System.out.println("location.getLast_updated_source() != null : " + location.getLast_updated_source() != null);
+			if (location.getLast_updated_source() != null && location.getCreated_source() != null) {
+				location.setCreated_source(location.getCreated_source());
+				location.setLast_updated_source(location.getLast_updated_source());
+			} else {
+				location.setCreated_source("Location Management");
+				location.setLast_updated_source("Location Management");
+			}
 			query.executeUpdate();
 			currentSession.saveOrUpdate(location);
-			
+			logger.info("Location Saved : "+location);
+			return location;
 		}
 		return null;
 	}
@@ -67,18 +78,18 @@ public class LocationRepositoryImpl implements LocationRepository {
 
 	@Override
 	public Location findLocationByBarcode(String location_name) {
-		logger.info(""+location_name);
-		 Session currentSession = entityManager.unwrap(Session.class);
-		    Query<Location> query = currentSession.createQuery("from Location where locnBrcd = :locnBrcd", Location.class);
-		    query.setParameter("locnBrcd", location_name);
+		logger.info("" + location_name);
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<Location> query = currentSession.createQuery("from Location where locnBrcd = :locnBrcd", Location.class);
+		query.setParameter("locnBrcd", location_name);
 
-		    try {
-		    	logger.info("Query : "+query.getSingleResult());
-		        return query.getSingleResult();
-		    } catch (NoResultException e) {
-		        // Handle the exception here
-		        return null;
-		    }
+		try {
+			logger.info("Query : " + query.getSingleResult());
+			return query.getSingleResult();
+		} catch (NoResultException e) {
+			// Handle the exception here
+			return null;
+		}
 	}
 
 	@Override
@@ -99,7 +110,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 	public Location updateLocationByLocationId(int locn_id, Location location) {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Location existingLocation = findLocationById(locn_id);
-		logger.info(""+existingLocation);
+		logger.info("" + existingLocation);
 		existingLocation.setLocn_brcd(location.getLocn_brcd());
 		existingLocation.setLocn_class(location.getLocn_class());
 		existingLocation.setLength(location.getLength());
@@ -122,7 +133,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 	public Location updateLocationByLocationBarcode(String locn_brcd, Location location) {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Location existingLocation = findLocationByBarcode(locn_brcd);
-		logger.info(""+existingLocation);
+		logger.info("" + existingLocation);
 		existingLocation.setLocn_brcd(location.getLocn_brcd());
 		existingLocation.setLocn_class(location.getLocn_class());
 		existingLocation.setLength(location.getLength());

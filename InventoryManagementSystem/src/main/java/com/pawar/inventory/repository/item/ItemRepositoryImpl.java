@@ -59,6 +59,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 		if (fetchedCategory == null) {
 			currentSession.save(category);
 		}
+		item.setItem_name(createItemName(item.getDescription()));
 		item.setUnit_volume(item.getUnit_length()*item.getUnit_width()*item.getUnit_height());
 		item.setCategory(fetchedCategory);
 		item.setCreated_dttm(LocalDateTime.now());
@@ -76,6 +77,37 @@ public class ItemRepositoryImpl implements ItemRepository {
 
 		logger.info("Item successfully added : " + item);
 		return item;
+	}
+
+	
+	@Override
+	public String createItemName(String raw_item__name_description) {
+		
+		String[] parts = raw_item__name_description.split(" ", 3);
+
+		String brand = parts[0];
+		String model = parts[1];
+		String variant = (parts.length > 2) ? parts[2] : "";
+		String brandCode = brand.substring(0, Math.min(brand.length(), 4)).toUpperCase();
+
+		// Keep only the first character of each word in the model name
+		String modelCode = model.replaceAll("(\\p{Alnum})\\p{Alnum}*", "$1");
+		String digits = raw_item__name_description.replaceAll("\\D", "");
+
+		if (!digits.isEmpty()) {
+
+			modelCode += digits;// .substring(0, 0);
+		}
+		// If a variant exists, append its first character to the model code
+		if (!variant.isEmpty()) {
+			modelCode += variant.substring(0, 1);
+		}
+
+		// Append the first digit in the input to the model code
+		String item_name = brandCode + "-" + modelCode;
+		logger.info("Item Name  : " + item_name);
+		return item_name;
+
 	}
 
 	@Override
@@ -96,8 +128,8 @@ public class ItemRepositoryImpl implements ItemRepository {
 	public Item findItemByname(String itemName) throws ItemNotFoundException{
 		logger.info("" + itemName);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Item> query = currentSession.createQuery("from Item where itemName = :itemName", Item.class);
-		query.setParameter("itemName", itemName);
+		Query<Item> query = currentSession.createQuery("from Item where description = :description", Item.class);
+		query.setParameter("description", itemName);
 		
 		List<Item> items = query.getResultList();
 		if (!items.isEmpty()) {
@@ -178,5 +210,6 @@ public class ItemRepositoryImpl implements ItemRepository {
 		currentSession.delete(item);
 		return item;
 	}
+
 
 }
