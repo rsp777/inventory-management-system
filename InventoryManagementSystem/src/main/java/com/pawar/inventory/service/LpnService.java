@@ -61,7 +61,7 @@ public class LpnService {
 	}
 
 	public Lpn deleteLpnByLpnBarcode(String lpn_name) {
-		// TODO Auto-generated method stub
+		logger.info(lpn_name);
 		return lpnRepository.deleteLpnByLpnBarcode(lpn_name);
 	}
 

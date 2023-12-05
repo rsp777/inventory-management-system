@@ -57,11 +57,11 @@ public class InventoryController {
 		
 		try {
 			inventoryService.createReserveInventory(lpn,location);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
+		} 
+		catch (ParseException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} 
+		catch (IOException e) {
 			e.printStackTrace();
 		}
 		return ResponseEntity.ok("Lpn Located to Reserve Location Successfully : ");
