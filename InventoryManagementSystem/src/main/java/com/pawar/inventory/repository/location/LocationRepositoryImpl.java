@@ -139,16 +139,16 @@ public class LocationRepositoryImpl implements LocationRepository {
 		existingLocation.setLength(location.getLength());
 		existingLocation.setWidth(location.getWidth());
 		existingLocation.setHeight(location.getHeight());
-		existingLocation.setCurr_vol(location.getCurr_vol());
-		existingLocation.setCurr_weight(location.getCurr_vol());
+		// existingLocation.setCurr_vol(location.getCurr_vol());
+		// existingLocation.setCurr_weight(location.getCurr_vol());
 		existingLocation.setMax_qty(location.getMax_qty());
 		existingLocation.setMax_volume(location.getMax_volume());
 		existingLocation.setMax_weight(location.getMax_weight());
-		existingLocation.setOccupied_qty(location.getOccupied_qty());
+		// existingLocation.setOccupied_qty(location.getOccupied_qty());
 		existingLocation.setLast_updated_dttm(LocalDateTime.now());
 		existingLocation.setLast_updated_source("IMS");
 		currentSession.saveOrUpdate(existingLocation);
-		logger.info("Item updated : " + existingLocation);
+		logger.info("Location updated : " + existingLocation);
 		return existingLocation;
 	}
 

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -116,11 +117,12 @@ public class InventoryController {
 	}
 	
 	@GetMapping("/list/by-lpn/{lpn_name}")
-	public Inventory getInventoryByLpn(String lpn_name) {
+	public Inventory getInventoryByLpn(@PathVariable String lpn_name) {
+		logger.info("LPN :"+lpn_name);
 		return inventoryService.getInventoryByLpn(lpn_name);
 	}
 	
-	@GetMapping("/list/by-lpn/{locn_brcd}")
+	@GetMapping("/list/by-loc/{locn_brcd}")
 	public List<Inventory> getInventoryByLocation(String locn_brcd) {
 		return inventoryService.getInventoryByLocation(locn_brcd);
 	}

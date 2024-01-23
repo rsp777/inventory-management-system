@@ -49,6 +49,9 @@ public class Lpn {
 	@Column(name = "volume")
 	private double volume;
 	
+	@Column(name = "lpn_facility_status")
+	private int lpn_facility_status;
+
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
 	@JsonProperty("created_dttm")
 	@Column(name = "created_dttm")
@@ -70,7 +73,7 @@ public class Lpn {
 	}
 
 	public Lpn(int lpn_id, String lpn_name, Item item, int quantity, double length, double width, double height,
-			double weight, double volume, LocalDateTime created_dttm, LocalDateTime last_updated_dttm, String created_source,
+			double weight, double volume,int lpn_facility_status, LocalDateTime created_dttm, LocalDateTime last_updated_dttm, String created_source,
 			String last_updated_source) {
 		super();
 		this.lpn_id = lpn_id;
@@ -82,6 +85,7 @@ public class Lpn {
 		this.height = height;
 		this.weight = weight;
 		this.volume = volume;
+		this.lpn_facility_status = lpn_facility_status;
 		this.created_dttm = created_dttm;
 		this.last_updated_dttm = last_updated_dttm;
 		this.created_source = created_source;
@@ -163,6 +167,14 @@ public class Lpn {
 		this.volume = volume;
 	}
 
+	public int getLpn_facility_status() {
+		return lpn_facility_status;
+	}
+
+	public void setLpn_facility_status(int lpn_facility_status) {
+		this.lpn_facility_status = lpn_facility_status;
+	}
+
 	public LocalDateTime getCreated_dttm() {
 		return created_dttm;
 	}
@@ -197,10 +209,13 @@ public class Lpn {
 
 	@Override
 	public String toString() {
-		return "Lpn [lpn_id=" + lpn_id + ", lpn_name=" + lpn_name + ", item=" + item + ", quantity="
-				+ quantity + ", length=" + length + ", width=" + width + ", height=" + height + ", weight=" + weight
-				+ ", volume=" + volume + ", created_dttm=" + created_dttm + ", last_updated_dttm=" + last_updated_dttm
-				+ ", created_source=" + created_source + ", last_updated_source=" + last_updated_source + "]";
+		return "Lpn [lpn_id=" + lpn_id + ", lpn_name=" + lpn_name + ", item=" + item + ", quantity=" + quantity
+				+ ", length=" + length + ", width=" + width + ", height=" + height + ", weight=" + weight + ", volume="
+				+ volume + ", lpn_facility_status=" + lpn_facility_status + ", created_dttm=" + created_dttm
+				+ ", last_updated_dttm=" + last_updated_dttm + ", created_source=" + created_source
+				+ ", last_updated_source=" + last_updated_source + "]";
 	}
+
+	
 
 }

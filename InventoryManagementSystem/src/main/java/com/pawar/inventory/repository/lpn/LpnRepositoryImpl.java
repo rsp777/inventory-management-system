@@ -10,6 +10,7 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.pawar.inventory.constants.LpnFacilityStatusContants;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
@@ -56,14 +57,17 @@ public class LpnRepositoryImpl implements LpnRepository {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Lpn> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Lpn.class);
 		query.executeUpdate();
-//		// Check to see if the Category object already exists in the database.
-//	    Category existingCategory = currentSession.get(Category.class, category.getId());
-//
-//	    // If the Category object does not exist in the database, save it to the database.
+		// // Check to see if the Category object already exists in the database.
+		// Category existingCategory = currentSession.get(Category.class,
+		// category.getId());
+		//
+		// // If the Category object does not exist in the database, save it to the
+		// database.
 		if (fetchedItem == null) {
 			currentSession.save(lpn);
 		}
 		lpn.setItem(fetchedItem);
+		lpn.setLpn_facility_status(LpnFacilityStatusContants.CREATED);
 		lpn.setLength(fetchedItem.getUnit_length());
 		lpn.setWidth(fetchedItem.getUnit_width());
 		lpn.setHeight(fetchedItem.getUnit_height());
@@ -72,9 +76,9 @@ public class LpnRepositoryImpl implements LpnRepository {
 		lpn.setCreated_dttm(LocalDateTime.now());
 		lpn.setLast_updated_dttm(LocalDateTime.now());
 		lpn.setLast_updated_source("IMS");
-		
-		logger.info("Lpn data : "+lpn.getCreated_source());
-		
+
+		logger.info("Lpn data : " + lpn.getCreated_source());
+
 		currentSession.saveOrUpdate(lpn);
 
 		logger.info("Lpn successfully added : " + lpn);
@@ -134,6 +138,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 		Item existingItem = itemRepository.findItemByname(lpn.getItem().getItem_name());
 		logger.info("Existing Lpn : " + existingLpn);
 		logger.info("Existing Item : " + existingItem);
+		existingLpn.setLpn_facility_status(lpn.getLpn_facility_status());
 		existingLpn.setLpn_name(lpn.getLpn_name());
 		existingLpn.setItem(existingItem);
 		existingLpn.setQuantity(lpn.getQuantity());
@@ -143,11 +148,11 @@ public class LpnRepositoryImpl implements LpnRepository {
 		existingLpn.setVolume(lpn.getVolume());
 		existingLpn.setLast_updated_dttm(LocalDateTime.now());
 		existingLpn.setLast_updated_source("IMS");
-		
+
 		currentSession.saveOrUpdate(existingLpn);
-		
-		logger.info("Lpn updated : "+existingLpn);
-		
+
+		logger.info("Lpn updated : " + existingLpn);
+
 		return existingLpn;
 	}
 
@@ -158,6 +163,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 		Item existingItem = itemRepository.findItemByname(lpn.getItem().getItem_name());
 		logger.info("Existing Lpn : " + existingLpn);
 		logger.info("Existing Item : " + existingItem);
+		existingLpn.setLpn_facility_status(lpn.getLpn_facility_status());
 		existingLpn.setLpn_name(lpn.getLpn_name());
 		existingLpn.setItem(existingItem);
 		existingLpn.setQuantity(lpn.getQuantity());
@@ -167,11 +173,11 @@ public class LpnRepositoryImpl implements LpnRepository {
 		existingLpn.setVolume(lpn.getVolume());
 		existingLpn.setLast_updated_dttm(LocalDateTime.now());
 		existingLpn.setLast_updated_source("IMS");
-		
+
 		currentSession.saveOrUpdate(existingLpn);
-		
-		logger.info("Lpn updated : "+existingLpn);
-		
+
+		logger.info("Lpn updated : " + existingLpn);
+
 		return existingLpn;
 	}
 
