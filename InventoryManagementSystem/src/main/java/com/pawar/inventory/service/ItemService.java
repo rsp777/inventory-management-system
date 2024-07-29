@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
@@ -32,7 +33,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	public Item findItemByname(String itemName) throws ItemNotFoundException  {
+	public Item findItemByname(String itemName) throws ItemNotFoundException, CategoryNotFoundException  {
 		Item item = itemRepository.findItemByname(itemName);
 		
 //		if (item == null) {
@@ -57,7 +58,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	public Item updateItemByItemName(String item_name, Item item) throws ItemNotFoundException {
+	public Item updateItemByItemName(String item_name, Item item) throws ItemNotFoundException, CategoryNotFoundException {
 		// TODO Auto-generated method stub
 		return itemRepository.updateItemByItemName(item_name,item);
 	}
@@ -69,7 +70,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException {
+	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException, CategoryNotFoundException {
 		// TODO Auto-generated method stub
 		return itemRepository.deleteItemByItemName(itemName);
 	}

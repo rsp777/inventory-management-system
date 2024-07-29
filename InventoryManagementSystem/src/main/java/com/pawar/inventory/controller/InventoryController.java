@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
@@ -42,6 +43,7 @@ public class InventoryController {
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PostMapping(value = "/createReserve", consumes = "application/json", produces = "application/json")
 	public ResponseEntity<?> createReserveInventory(@RequestBody Map<String, Object> payload) {
+		String response="";
 		logger.info("Payload : " + payload);
 
 		@SuppressWarnings("unchecked")
@@ -57,21 +59,30 @@ public class InventoryController {
 		logger.info(""+location);
 		
 		try {
-			inventoryService.createReserveInventory(lpn,location);
+			response = inventoryService.createReserveInventory(lpn,location);
+			logger.info("Response : "+response);
+			return ResponseEntity.ok(response);
+
 		} 
 		catch (ParseException e) {
 			e.printStackTrace();
+			return  ResponseEntity.internalServerError().build();
 		} 
 		catch (IOException e) {
 			e.printStackTrace();
+			return  ResponseEntity.internalServerError().build();
 		}
-		return ResponseEntity.ok("Lpn Located to Reserve Location Successfully : ");
+		catch (Exception e) {
+			return ResponseEntity.internalServerError().build();
+		}
+		
 
 	}	
 	
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PostMapping(value = "/createActive", consumes = "application/json", produces = "application/json")
 	public ResponseEntity<?> createActiveInventory(@RequestBody Map<String, Object> payload) {
+		String response = "";
 		logger.info("Payload : " + payload);
 
 		@SuppressWarnings("unchecked")
@@ -87,15 +98,21 @@ public class InventoryController {
 		logger.info(""+location);
 		
 		try {
-			inventoryService.createActiveInventory(lpn,location);
+			response = inventoryService.createActiveInventory(lpn,location);
+			logger.info("Response : "+response);
+			return ResponseEntity.ok(response);
+
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return  ResponseEntity.internalServerError().build();
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return  ResponseEntity.internalServerError().build();
+
 		}
-		return ResponseEntity.ok("Inventory Located to Active Location Successfully : ");
 
 	}	
 	
@@ -110,7 +127,7 @@ public class InventoryController {
 		 try {
 		        List<Inventory> inventories = inventoryService.getInventorybyItem(item_name);
 		        return new ResponseEntity<>(inventories, HttpStatus.OK);
-		    } catch (ItemNotFoundException e) {
+		    } catch (ItemNotFoundException | CategoryNotFoundException e) {
 		        // Log the exception and return a user-friendly message
 		        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		    }

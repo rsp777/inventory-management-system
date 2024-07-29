@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
+import com.pawar.inventory.service.CategoryService;
 import com.pawar.inventory.service.ItemService;
 
 @RestController
@@ -33,6 +35,9 @@ public class ItemController {
 
 	@Autowired
 	public ItemService itemService;
+
+	@Autowired
+	private CategoryService categoryService;
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PostMapping(value = "/add", consumes = "application/json", produces = "application/json")
@@ -46,13 +51,25 @@ public class ItemController {
 		mapper.registerModule(new JavaTimeModule());
 		Item item = mapper.convertValue(jsonMap, Item.class);
 		Category category = mapper.convertValue(jsonMap.get("category"), Category.class);
+		boolean isCategoryPresent=false;
+		try {
+//			logger.info("isCategoryPresent : "+categoryService.validateCategory(category));
+			isCategoryPresent = categoryService.validateCategory(category);
+			logger.info("" + item);
+			logger.info("isCategoryPresent : "+isCategoryPresent);
 
-		// logger.info(""+category);
-		logger.info("" + item);
+			if (isCategoryPresent) {
 
-		itemService.addItem(item, category);
-		return ResponseEntity.ok("Item Added Successfully : ");
+				itemService.addItem(item, category);
+				return ResponseEntity.ok("Item Added Successfully : "+item.getItem_name());
 
+			}
+		} catch (CategoryNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.getMessage();
+		}
+		
+		return (ResponseEntity<?>) ResponseEntity.notFound();
 	}
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -74,7 +91,7 @@ public class ItemController {
 		try {
 			Item item = itemService.findItemByname(itemName);
 			return new ResponseEntity<>(item, HttpStatus.OK);
-		} catch (ItemNotFoundException e) {
+		} catch (ItemNotFoundException | CategoryNotFoundException e) {
 			// Log the exception and return a user-friendly message
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
@@ -90,15 +107,20 @@ public class ItemController {
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PutMapping("/update/by-name/{itemName}")
-	public Item updateItemByItemName(@PathVariable String itemName, @RequestBody Item item) {
-		logger.info("Update this item : " + item);
+	public ResponseEntity<?> updateItemByItemName(@PathVariable String itemName, @RequestBody Map<String, Object> itemPayload) {
+		logger.info("Update this item : " + itemName);
+		Map<String, Object> jsonMap = (Map<String, Object>) itemPayload.get("item");
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		Item item = mapper.convertValue(jsonMap, Item.class);
 		try {
-			item = itemService.updateItemByItemName(itemName, item);
-		} catch (ItemNotFoundException e) {
 			
+			item = itemService.updateItemByItemName(itemName, item);
+		} catch (ItemNotFoundException | CategoryNotFoundException e) {
+
 			e.printStackTrace();
 		}
-		return item;
+		return ResponseEntity.ok("Item Edited Successfully : "+item.getDescription());
 	}
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -115,8 +137,8 @@ public class ItemController {
 		try {
 			item = itemService.deleteItemByItemName(itemName);
 			return item;
-		} catch (ItemNotFoundException e) {
-			
+		} catch (ItemNotFoundException | CategoryNotFoundException e) {
+
 			e.printStackTrace();
 			return null;
 		}

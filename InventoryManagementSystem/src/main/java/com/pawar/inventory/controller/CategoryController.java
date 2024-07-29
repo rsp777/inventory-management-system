@@ -42,7 +42,7 @@ public class CategoryController {
 		logger.info("Category : "+category);
 		Category newCategory = categoryService.createCategory(category);
 		logger.info("New Category is now created : "+newCategory);
-		return ResponseEntity.ok("Category Added Successfully : "+newCategory);
+		return ResponseEntity.ok("Category Added Successfully : "+newCategory.getCategory_name());
 		
 	}
 	
@@ -72,10 +72,10 @@ public class CategoryController {
 	}
 	
 	@PutMapping("/update/by-name/{category_name}")
-	public Category updateCategoryByCategoryName(@PathVariable String category_name,@RequestBody Category category){
+	public ResponseEntity<?> updateCategoryByCategoryName(@PathVariable String category_name,@RequestBody Category category){
 		logger.info("Update this category : "+category);
 		category = categoryService.updateCategoryByCategoryName(category_name,category);
-		return category;
+		return ResponseEntity.ok("Category Updated Successfully");
 	}
 	
 	@DeleteMapping("/delete/by-id/{category_id}")

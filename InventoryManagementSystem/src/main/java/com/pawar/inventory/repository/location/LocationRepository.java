@@ -12,5 +12,6 @@ public interface LocationRepository {
 	public Location updateLocationByLocationBarcode(String locn_brcd, Location location);
 	public Location deleteLocationByLocationId(int locn_id);
 	public Location deleteLocationByLocationBarcode(String locn_brcd);
+	public Location updateOccupiedQty(Location location,int adjustQty);
 	
 }

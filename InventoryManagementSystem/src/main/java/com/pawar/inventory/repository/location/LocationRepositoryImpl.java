@@ -87,9 +87,9 @@ public class LocationRepositoryImpl implements LocationRepository {
 			logger.info("Query : " + query.getSingleResult());
 			return query.getSingleResult();
 		} catch (NoResultException e) {
-			// Handle the exception here
 			return null;
 		}
+		
 	}
 
 	@Override
@@ -151,6 +151,15 @@ public class LocationRepositoryImpl implements LocationRepository {
 		logger.info("Location updated : " + existingLocation);
 		return existingLocation;
 	}
+
+	public Location updateOccupiedQty(Location location,int adjustQty){
+		logger.info("Location : " + location);
+		logger.info("Quantity to be adjusted: " +adjustQty);
+		Session currentSession = entityManager.unwrap(Session.class);
+		location.setOccupied_qty(location.getOccupied_qty() - adjustQty);
+		currentSession.saveOrUpdate(location);
+		return location;
+	}	
 
 	@Override
 	public Location deleteLocationByLocationId(int locn_id) {
