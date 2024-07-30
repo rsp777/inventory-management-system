@@ -87,9 +87,9 @@ public class LocationRepositoryImpl implements LocationRepository {
 			logger.info("Query : " + query.getSingleResult());
 			return query.getSingleResult();
 		} catch (NoResultException e) {
-			// Handle the exception here
 			return null;
 		}
+		
 	}
 
 	@Override
@@ -139,18 +139,27 @@ public class LocationRepositoryImpl implements LocationRepository {
 		existingLocation.setLength(location.getLength());
 		existingLocation.setWidth(location.getWidth());
 		existingLocation.setHeight(location.getHeight());
-		existingLocation.setCurr_vol(location.getCurr_vol());
-		existingLocation.setCurr_weight(location.getCurr_vol());
+		// existingLocation.setCurr_vol(location.getCurr_vol());
+		// existingLocation.setCurr_weight(location.getCurr_vol());
 		existingLocation.setMax_qty(location.getMax_qty());
 		existingLocation.setMax_volume(location.getMax_volume());
 		existingLocation.setMax_weight(location.getMax_weight());
-		existingLocation.setOccupied_qty(location.getOccupied_qty());
+		// existingLocation.setOccupied_qty(location.getOccupied_qty());
 		existingLocation.setLast_updated_dttm(LocalDateTime.now());
 		existingLocation.setLast_updated_source("IMS");
 		currentSession.saveOrUpdate(existingLocation);
-		logger.info("Item updated : " + existingLocation);
+		logger.info("Location updated : " + existingLocation);
 		return existingLocation;
 	}
+
+	public Location updateOccupiedQty(Location location,int adjustQty){
+		logger.info("Location : " + location);
+		logger.info("Quantity to be adjusted: " +adjustQty);
+		Session currentSession = entityManager.unwrap(Session.class);
+		location.setOccupied_qty(location.getOccupied_qty() - adjustQty);
+		currentSession.saveOrUpdate(location);
+		return location;
+	}	
 
 	@Override
 	public Location deleteLocationByLocationId(int locn_id) {

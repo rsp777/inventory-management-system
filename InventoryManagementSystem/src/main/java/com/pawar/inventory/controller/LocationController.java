@@ -47,7 +47,7 @@ public class LocationController {
 		logger.info(""+location);
 		
 		locationService.createLocation(location);
-		return ResponseEntity.ok("Location Added Successfully : ");
+		return ResponseEntity.ok("Location Added Successfully : "+location.getLocn_brcd());
 
 	}
 	@GetMapping("/list")
@@ -69,17 +69,17 @@ public class LocationController {
 	}
 	
 	@PutMapping("/update/by-id/{locn_id}")
-	public Location updateLocationByLocationId(@PathVariable int locn_id,@RequestBody Location location){
+	public ResponseEntity<?> updateLocationByLocationId(@PathVariable int locn_id,@RequestBody Location location){
 		logger.info("Update this location : "+location);
-		location = locationService.updateLocationByLocationId(locn_id,location);
-		return location;
+		 location = locationService.updateLocationByLocationId(locn_id,location);
+		return ResponseEntity.ok("Location Edited Successfully : "+location.getLocn_brcd());
 	}
 	
 	@PutMapping("/update/by-name/{locn_brcd}")
-	public Location updateLocationByLocationBarcode(@PathVariable String locn_brcd,@RequestBody Location location){
+	public ResponseEntity<?> updateLocationByLocationBarcode(@PathVariable String locn_brcd,@RequestBody Location location){
 		logger.info("Update this location : "+location);
 		location = locationService.updateLocationByLocationBarcode(locn_brcd,location);
-		return location;
+		return ResponseEntity.ok("Location Edited Successfully : "+location.getLocn_brcd());
 	}
 	
 	@DeleteMapping("/delete/by-id/{locn_id}")

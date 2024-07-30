@@ -99,5 +99,8 @@ public class LocationService {
 		}
 	}
 
-	
+	@Transactional
+	public Location updateOccupiedQty(Location location,int adjustQty){
+		return locationRepository.updateOccupiedQty(location, adjustQty);
+	}
 }

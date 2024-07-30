@@ -29,16 +29,16 @@ public class Item {
 	private String itemName;
 
 	@Column(name = "unit_length")
-	private double unit_length;
+	private float unit_length;
 
 	@Column(name = "unit_width")
-	private double unit_width;
+	private float unit_width;
 
 	@Column(name = "unit_height")
-	private double unit_height;
+	private float unit_height;
 
 	@Column(name = "unit_volume")
-	private double unit_volume;
+	private float unit_volume;
 
 	@Column(name = "description")
 	private String description;
@@ -68,8 +68,8 @@ public class Item {
 	public Item() {
 	}
 
-	public Item(int item_id, String itemName, double unit_length, double unit_width, double unit_height,
-			double unit_volume, String description, Category category, LocalDateTime created_dttm,
+	public Item(int item_id, String itemName, float unit_length, float unit_width, float unit_height,
+			float unit_volume, String description, Category category, LocalDateTime created_dttm,
 			LocalDateTime last_updated_dttm, String created_source, String last_updated_source) {
 		super();
 		this.item_id = item_id;
@@ -102,35 +102,35 @@ public class Item {
 		this.itemName = itemName;
 	}
 
-	public double getUnit_length() {
+	public float getUnit_length() {
 		return unit_length;
 	}
 
-	public void setUnit_length(double unit_length) {
+	public void setUnit_length(float unit_length) {
 		this.unit_length = unit_length;
 	}
 
-	public double getUnit_width() {
+	public float getUnit_width() {
 		return unit_width;
 	}
 
-	public void setUnit_width(double unit_width) {
+	public void setUnit_width(float unit_width) {
 		this.unit_width = unit_width;
 	}
 
-	public double getUnit_height() {
+	public float getUnit_height() {
 		return unit_height;
 	}
 
-	public void setUnit_height(double unit_height) {
+	public void setUnit_height(float unit_height) {
 		this.unit_height = unit_height;
 	}
 
-	public double getUnit_volume() {
+	public float getUnit_volume() {
 		return unit_volume;
 	}
 
-	public void setUnit_volume(double unit_volume) {
+	public void setUnit_volume(float unit_volume) {
 		this.unit_volume = unit_volume;
 	}
 

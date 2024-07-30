@@ -8,10 +8,12 @@ import java.util.logging.Logger;
 
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
@@ -34,23 +36,23 @@ public class InventoryService {
 	LocationService locationService;
 
 	@Transactional
-	public Inventory createInventory(Lpn lpn) {
+	public Inventory createInventory(Lpn lpn,Session currentSession) {
 		logger.info("Inventory needed to be created for LPN : " + lpn);
 
-		return inventoryRepository.createInventory(lpn);
+		return inventoryRepository.createInventory(lpn,currentSession);
 
 	}
 
 	@Transactional
-	public Inventory createReserveInventory(Lpn lpn, Location locn) throws ParseException, IOException {
+	public String createReserveInventory(Lpn lpn, Location locn) throws ParseException, IOException {
 		logger.info("Locating LPN to a Reserve Location : " + lpn.getLpn_name());
-
-		return inventoryRepository.createReserveInventory(lpn, locn);
+		String response = inventoryRepository.createReserveInventory(lpn, locn);
+		return response;
 
 	}
 
 	@Transactional
-	public Inventory createActiveInventory(Lpn lpn, Location locn) throws ClientProtocolException, IOException {
+	public String createActiveInventory(Lpn lpn, Location locn) throws ClientProtocolException, IOException {
 		logger.info("Replenishment of Active Location : " + lpn.getLpn_name());
 		return inventoryRepository.createActiveInventory(lpn, locn);
 	}
@@ -62,7 +64,7 @@ public class InventoryService {
 	}
 
 	@Transactional
-	public List<Inventory> getInventorybyItem(String item_name) throws ItemNotFoundException  {
+	public List<Inventory> getInventorybyItem(String item_name) throws ItemNotFoundException, CategoryNotFoundException  {
 		// TODO Auto-generated method stub
 		Item item = itemService.findItemByname(item_name);
 		return inventoryRepository.getInventorybyItem(item);
@@ -87,4 +89,13 @@ public class InventoryService {
 		inventoryRepository.deleteByInventoryLpn(lpn_name);
 	}
 
+	@Transactional
+	public Inventory updateInventoryQty(Inventory inventory,int adjustQty){
+		return inventoryRepository.updateInventoryQty(inventory, adjustQty);
+	}
+	
+	@Transactional
+	public void updateInventory(Lpn lpn){
+		 inventoryRepository.updateInventory(lpn);
+	}
 }
