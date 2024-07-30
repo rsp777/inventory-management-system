@@ -12,10 +12,12 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.repository.category.CategoryRepository;
+import com.pawar.inventory.service.CategoryService;
 import com.pawar.inventory.service.ItemService;
 
 import jakarta.persistence.EntityManager;
@@ -29,7 +31,10 @@ public class ItemRepositoryImpl implements ItemRepository {
 
 	@Autowired
 	CategoryRepository categoryRepository;
-
+	
+	@Autowired
+	CategoryService categoryService;
+	
 	public ItemRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
 	}
@@ -56,15 +61,16 @@ public class ItemRepositoryImpl implements ItemRepository {
 //	    Category existingCategory = currentSession.get(Category.class, category.getId());
 //
 //	    // If the Category object does not exist in the database, save it to the database.
-		if (fetchedCategory == null) {
-			currentSession.save(category);
-		}
+//		if (fetchedCategory == null) {
+//			logger.info("Category is null");
+//			return;
+//		}
 		item.setItem_name(createItemName(item.getDescription()));
 		item.setUnit_volume(item.getUnit_length()*item.getUnit_width()*item.getUnit_height());
 		item.setCategory(fetchedCategory);
 		item.setCreated_dttm(LocalDateTime.now());
 		item.setLast_updated_dttm(LocalDateTime.now());
-		System.out.println("item.getLast_updated_source() != null : "+item.getLast_updated_source() != null);
+//		System.out.println("item.getLast_updated_source() != null : "+item.getLast_updated_source() != null);
 		if (item.getLast_updated_source()!= null && item.getCreated_source()!= null) {
 			item.setCreated_source(item.getCreated_source());
 			item.setLast_updated_source(item.getLast_updated_source());
@@ -83,30 +89,40 @@ public class ItemRepositoryImpl implements ItemRepository {
 	@Override
 	public String createItemName(String raw_item__name_description) {
 		
-		String[] parts = raw_item__name_description.split(" ", 3);
+		String brand = null;
+		String model = null;
+        String variant = null;
+		String brandCode = null;
+		String modelCode = null;
+		String digits =null;
 
-		String brand = parts[0];
-		String model = parts[1];
-		String variant = (parts.length > 2) ? parts[2] : "";
-		String brandCode = brand.substring(0, Math.min(brand.length(), 4)).toUpperCase();
+		if (raw_item__name_description.contains(" ")) {
+			String[] parts = raw_item__name_description.split(" ", 3);
+			 brand = parts[0];
+			 model = parts[1];
+			 variant = (parts.length > 2) ? parts[2] : "";
+			 brandCode = brand.substring(0, Math.min(brand.length(), 4)).toUpperCase();
 
-		// Keep only the first character of each word in the model name
-		String modelCode = model.replaceAll("(\\p{Alnum})\\p{Alnum}*", "$1");
-		String digits = raw_item__name_description.replaceAll("\\D", "");
+			// Keep only the first character of each word in the model name
+			 modelCode = model.replaceAll("(\\p{Alnum})\\p{Alnum}*", "$1");
+			 digits = raw_item__name_description.replaceAll("\\D", "");
+			 if (!digits.isEmpty()) {
 
-		if (!digits.isEmpty()) {
-
-			modelCode += digits;// .substring(0, 0);
+				modelCode += digits;// .substring(0, 0);
+			}
+			// If a variant exists, append its first character to the model code
+			if (!variant.isEmpty()) {
+				modelCode += variant.substring(0, 1);
+			}
+	
+			// Append the first digit in the input to the model code
+			String item_name = brandCode + "-" + modelCode;
+			logger.info("Item Name  : " + item_name);
+			return item_name;
 		}
-		// If a variant exists, append its first character to the model code
-		if (!variant.isEmpty()) {
-			modelCode += variant.substring(0, 1);
-		}
+		return raw_item__name_description.toUpperCase();
+		
 
-		// Append the first digit in the input to the model code
-		String item_name = brandCode + "-" + modelCode;
-		logger.info("Item Name  : " + item_name);
-		return item_name;
 
 	}
 
@@ -125,8 +141,13 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item findItemByname(String itemName) throws ItemNotFoundException{
+	public Item findItemByname(String itemName) throws ItemNotFoundException, CategoryNotFoundException{
 		logger.info("" + itemName);
+		if (itemName.contains("%20")) {
+			itemName = itemName.replaceAll("%20", " ");
+			logger.info("Item without %20: " + itemName);
+		}
+		
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Item> query = currentSession.createQuery("from Item where description = :description", Item.class);
 		query.setParameter("description", itemName);
@@ -135,7 +156,13 @@ public class ItemRepositoryImpl implements ItemRepository {
 		if (!items.isEmpty()) {
 	        Item item = items.get(0);
 	        logger.info("Item : " + item);
-	        return item;
+//	        boolean isCategoryPresent = true;//categoryService.validateCategory(item.getCategory());
+//	        if (isCategoryPresent) {
+				return item;
+//			}
+//	        else {
+//	        	throw new CategoryNotFoundException();
+//	        }
 	    } else {
 	        throw new ItemNotFoundException("Item Not Found : "+itemName);
 	    }  
@@ -176,19 +203,28 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item updateItemByItemName(String item_name, Item item) throws ItemNotFoundException {
+	public Item updateItemByItemName(String item_name, Item item) throws ItemNotFoundException, CategoryNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
+		logger.info("item : "+item);
 		Item existingItem = findItemByname(item_name);
+		logger.info("existingItem : "+existingItem);
+		
+		logger.info("unit length : "+item.getUnit_length());
+		logger.info("unit width : "+item.getUnit_width());
+		logger.info("unit height : "+item.getUnit_height());
+//		logger.info("item name : "+item.getItem_name());
+		logger.info("description : "+item.getDescription());
+		logger.info("category : "+item.getCategory());
 		Category existingCategory = categoryRepository.getCategoryByName(item.getCategory().getCategory_name());
 		existingItem.setUnit_length(item.getUnit_length());
 		existingItem.setUnit_width(item.getUnit_width());
 		existingItem.setUnit_height(item.getUnit_height());
 		existingItem.setDescription(item.getDescription());
-		existingItem.setItem_name(item.getItem_name());
+//		existingItem.setItem_name(item.getItem_name());
 		existingItem.setCategory(existingCategory);
 		existingItem.setLast_updated_dttm(LocalDateTime.now());
 		existingItem.setLast_updated_source("IMS");
-		currentSession.saveOrUpdate(existingItem);
+		currentSession.update(existingItem);
 		logger.info("Item updated : " + existingItem);
 		return existingItem;
 	}
@@ -203,7 +239,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException {
+	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException, CategoryNotFoundException {
 		Item item = findItemByname(itemName);
 		logger.info("Item to delete for : " + item);
 		Session currentSession = entityManager.unwrap(Session.class);

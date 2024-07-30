@@ -28,31 +28,31 @@ public class Location {
 	private String locnClass;
 	
 	@Column(name = "length")
-	private double length;
+	private float length;
 	
 	@Column(name = "width")
-	private double width;
+	private float width;
 	
 	@Column(name = "height")
-	private double height;
+	private float height;
 	
 	@Column(name = "max_weight")
-	private double maxWeight;
+	private float maxWeight;
 	
 	@Column(name = "max_volume")
-	private double maxVolume;
+	private float maxVolume;
 	
 	@Column(name = "max_qty")
-	private double maxQty;
+	private float maxQty;
 	
 	@Column(name = "occupied_qty")
-	private double occupiedQty;
+	private float occupiedQty;
 	
 	@Column(name = "curr_vol")
-	private double currVol;
+	private float currVol;
 	
 	@Column(name = "curr_weight")
-	private double currWeight;
+	private float currWeight;
 	
 	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
     @JsonProperty("created_dttm")
@@ -74,8 +74,8 @@ public class Location {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Location(int locn_id, String locnBrcd, String locnClass, double length, double width, double height,
-			double maxWeight, double maxVolume, double maxQty,double occupiedQty, double currVol, double currWeight,
+	public Location(int locn_id, String locnBrcd, String locnClass, float length, float width, float height,
+			float maxWeight, float maxVolume, float maxQty,float occupiedQty, float currVol, float currWeight,
 			LocalDateTime createdDttm, LocalDateTime lastUpdatedDttm, String createdSource, String lastUpdatedSource) {
 		super();
 		this.locn_id = locn_id;
@@ -120,74 +120,74 @@ public class Location {
 		this.locnClass = locnClass;
 	}
 
-	public double getLength() {
+	public float getLength() {
 		return length;
 	}
 
-	public void setLength(double length) {
+	public void setLength(float length) {
 		this.length = length;
 	}
 
-	public double getWidth() {
+	public float getWidth() {
 		return width;
 	}
 
-	public void setWidth(double width) {
+	public void setWidth(float width) {
 		this.width = width;
 	}
 
-	public double getHeight() {
+	public float getHeight() {
 		return height;
 	}
 
-	public void setHeight(double height) {
+	public void setHeight(float height) {
 		this.height = height;
 	}
 
-	public double getMax_weight() {
+	public float getMax_weight() {
 		return maxWeight;
 	}
 
-	public void setMax_weight(double maxWeight) {
+	public void setMax_weight(float maxWeight) {
 		this.maxWeight = maxWeight;
 	}
 
-	public double getMax_volume() {
+	public float getMax_volume() {
 		return maxVolume;
 	}
 
-	public void setMax_volume(double maxVolume) {
+	public void setMax_volume(float maxVolume) {
 		this.maxVolume = maxVolume;
 	}
 
-	public double getMax_qty() {
+	public float getMax_qty() {
 		return maxQty;
 	}
 
-	public void setMax_qty(double maxQty) {
+	public void setMax_qty(float maxQty) {
 		this.maxQty = maxQty;
 	}
 
-	public double getOccupied_qty() {
+	public float getOccupied_qty() {
 		return occupiedQty;
 	}
 
-	public void setOccupied_qty(double occupiedQty) {
+	public void setOccupied_qty(float occupiedQty) {
 		this.occupiedQty = occupiedQty;
 	}
-	public double getCurr_vol() {
+	public float getCurr_vol() {
 		return currVol;
 	}
 
-	public void setCurr_vol(double currVol) {
+	public void setCurr_vol(float currVol) {
 		this.currVol = currVol;
 	}
 
-	public double getCurr_weight() {
+	public float getCurr_weight() {
 		return currWeight;
 	}
 
-	public void setCurr_weight(double currWeight) {
+	public void setCurr_weight(float currWeight) {
 		this.currWeight = currWeight;
 	}
 
