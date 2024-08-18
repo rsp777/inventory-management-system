@@ -24,5 +24,6 @@ public interface InventoryRepository {
 	public void deleteByInventoryLpn(String lpn_name);
 	public List<Inventory> getInventoryByLocation(Location location);
 	public Inventory updateInventoryQty(Inventory inventory,int adjustQty);
-	public void updateInventory(Lpn lpn);	
+	public void updateInventory(Lpn lpn, Location location, String locnClass,Session currentSession);
+	public Location checkActiveInventory(Lpn lpn);	
 }

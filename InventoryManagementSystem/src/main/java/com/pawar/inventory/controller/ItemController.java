@@ -61,7 +61,7 @@ public class ItemController {
 			if (isCategoryPresent) {
 
 				itemService.addItem(item, category);
-				return ResponseEntity.ok("Item Added Successfully : "+item.getItem_name());
+				return ResponseEntity.ok("Item Added Successfully : "+item.getDescription());
 
 			}
 		} catch (CategoryNotFoundException e) {

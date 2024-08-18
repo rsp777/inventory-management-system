@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.exceptions.LpnNotFoundException;
+import com.pawar.inventory.model.ASN;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.lpn.LpnRepository;
@@ -29,6 +30,7 @@ public class LpnService {
 		return lpnRepository.createLpn(lpn,item);
 
 	}
+	
 
 	@Transactional
 	public Lpn getLpnByName(String lpn_name) throws LpnNotFoundException {
@@ -77,4 +79,5 @@ public class LpnService {
 		// TODO Auto-generated method stub
 		return lpnRepository.deallocateLpn(lpnName);
 	}
+
 }

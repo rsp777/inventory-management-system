@@ -86,6 +86,10 @@ public class Item {
 		this.last_updated_source = last_updated_source;
 	}
 
+	public Item(String itemName) {
+		this.itemName = itemName;
+	}
+
 	public int getItem_id() {
 		return item_id;
 	}

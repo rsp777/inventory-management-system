@@ -34,7 +34,13 @@ public class InventoryService {
 
 	@Autowired
 	LocationService locationService;
-
+	
+	@Autowired
+	ASNService asnService;
+	
+	@Autowired
+	LpnService lpnService;
+	
 	@Transactional
 	public Inventory createInventory(Lpn lpn,Session currentSession) {
 		logger.info("Inventory needed to be created for LPN : " + lpn);
@@ -93,9 +99,10 @@ public class InventoryService {
 	public Inventory updateInventoryQty(Inventory inventory,int adjustQty){
 		return inventoryRepository.updateInventoryQty(inventory, adjustQty);
 	}
-	
+
 	@Transactional
-	public void updateInventory(Lpn lpn){
-		 inventoryRepository.updateInventory(lpn);
+	public Location checkActiveInventory(Lpn lpn) {
+		// TODO Auto-generated method stub
+		return inventoryRepository.checkActiveInventory(lpn);
 	}
 }
