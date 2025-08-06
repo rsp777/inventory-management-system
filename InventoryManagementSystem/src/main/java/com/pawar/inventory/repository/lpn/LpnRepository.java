@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.lpn;
 
+import java.util.List;
+
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.exceptions.LpnNotFoundException;
@@ -28,6 +30,10 @@ public interface LpnRepository {
 	public Lpn deleteLpnByLpnBarcode(String lpn_name) throws LpnNotFoundException;
 
 	public Lpn deallocateLpn(String lpnName) throws LpnNotFoundException;
+
+	public List<Lpn> findLpnByCategory(String category) throws LpnNotFoundException;
+
+	public void createLpn(Lpn lpn, Item item, String asnBrcd) throws ItemNotFoundException, LpnNotFoundException;
 
 
 }

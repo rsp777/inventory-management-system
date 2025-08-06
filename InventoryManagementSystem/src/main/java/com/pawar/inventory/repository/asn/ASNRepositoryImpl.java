@@ -13,11 +13,13 @@ import org.springframework.stereotype.Repository;
 
 import com.pawar.inventory.constants.AsnStatusConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
+import com.pawar.inventory.entity.ASNDto;
 import com.pawar.inventory.exceptions.ASNNotFoundException;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.exceptions.LpnNotFoundException;
 import com.pawar.inventory.model.ASN;
+import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.inventory.InventoryRepository;
 import com.pawar.inventory.repository.lpn.LpnRepository;
@@ -56,7 +58,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 				ASN savedASN = currentSession.merge(asn);
 				for (Lpn lpn : lpns) {
 					lpn.setAsn(asn);
-					lpnRepository.createLpn(lpn, lpn.getItem());
+					lpnRepository.createLpn(lpn, lpn.getItem(), asn.getAsnBrcd());
 				}
 				return savedASN;
 			} else {
@@ -119,7 +121,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 			throws LpnNotFoundException, NoResultException, ASNNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		String response = "";
-		if (asn.getAsnBrcd()!="" && asn.getAsnBrcd() != null && lpns != null) {
+		if (asn.getAsnBrcd() != "" && asn.getAsnBrcd() != null && lpns != null) {
 			ASN fetchedASN = getASNByName(asn.getAsnBrcd());
 			if (fetchedASN.getAsnStatus() == AsnStatusConstants.IN_TRANSIT) {
 				for (Lpn lpn : lpns) {
@@ -151,6 +153,23 @@ public class ASNRepositoryImpl implements ASNRepository {
 		} else {
 			response = "ASN or Lpn is null";
 			return response;
+		}
+	}
+
+	@Override
+	public List<ASN> getAsnByCategory(String category) {
+		logger.info("Get ASN of Category : {}", category);
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<ASN> query = currentSession.createQuery(
+				"from ASN a join fetch a.lpns l join fetch l.item i where i.category.categoryName = :category and l.asn_brcd is not null",
+				ASN.class);
+		query.setParameter("category", category);
+		List<ASN> asnList = query.getResultList();
+
+		try {
+			return asnList;
+		} catch (NoResultException e) {
+			return null;
 		}
 	}
 

@@ -1,5 +1,6 @@
 package com.pawar.inventory.service;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +79,12 @@ public class LpnService {
 	public Lpn deallocateLpn(String lpnName) throws LpnNotFoundException {
 		// TODO Auto-generated method stub
 		return lpnRepository.deallocateLpn(lpnName);
+	}
+
+
+	public List<Lpn> findLpnByCategory(String category) throws LpnNotFoundException {
+		// TODO Auto-generated method stub
+		return lpnRepository.findLpnByCategory(category);
 	}
 
 }

@@ -124,6 +124,18 @@ public class AsnController {
 			return ResponseEntity.notFound().build();
 		}
 	}
+	
+	@GetMapping("/list/category/{category}")
+	public ResponseEntity<List<ASN>> getAsnByCategory(@PathVariable String category) {
+		try {
+			List<ASN> asn = asnService.getAsnByCategory(category);
+			logger.info("ASN : {}", asn);
+			return ResponseEntity.ok(asn); // Return 200 OK with the LPN
+		} catch (NoResultException e) {
+			// LPN not found, return 404 Not Found
+			return ResponseEntity.notFound().build();
+		}
+	}
 
 	@GetMapping("/list/by-id/{lpn_id}")
 	public Lpn findLpnById(@PathVariable int lpn_id) {

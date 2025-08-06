@@ -52,6 +52,7 @@ public class ASNService {
 		String key = consumerRecord.key();
 		String value = consumerRecord.value();
 		int partition = consumerRecord.partition();
+		logger.info("Incoming payload : {}",value);
 		ASNDto asnDto = objectMapper.readValue(value, ASNDto.class);
 		ASN asn = convertAsnDtoToEntity(asnDto);
 		List<Lpn> lpns = objectMapper.convertValue(asn.getLpns(),objectMapper.getTypeFactory().constructCollectionType(List.class, Lpn.class));
@@ -61,7 +62,7 @@ public class ASNService {
 		logger.info("Incoming ASN : {}", asnBrcd);
 		try {
 			createASN(asnDto);
-			receiveAsn(asn, lpns);
+//			receiveAsn(asn, lpns);
 		} catch (CategoryNotFoundException e) {
 			logger.error("Category Not Found : {}", e.getMessage());
 
@@ -110,6 +111,11 @@ public class ASNService {
 	public String receiveAsn(ASN asn, List<Lpn> lpns) throws LpnNotFoundException, NoResultException, ASNNotFoundException {
 		// TODO Auto-generated method stub
 		return asnRepository.receiveAsn(asn,lpns);
+	}
+
+	public List<ASN> getAsnByCategory(String category) {
+		// TODO Auto-generated method stub
+		return asnRepository.getAsnByCategory(category);
 	}
 
 }

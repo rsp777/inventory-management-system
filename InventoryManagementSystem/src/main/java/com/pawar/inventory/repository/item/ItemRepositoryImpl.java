@@ -1,5 +1,6 @@
 package com.pawar.inventory.repository.item;
 
+import java.lang.*;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,20 +43,20 @@ public class ItemRepositoryImpl implements ItemRepository {
 		logger.info("" + fetchedCategory);
 		logger.info("" + item);
 		boolean validateItemData = validateItemData(item);
-		
+
 		if (validateItemData) {
 			Session currentSession = entityManager.unwrap(Session.class);
 			Query<Item> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Item.class);
 			query.executeUpdate();
 //			// Check to see if the Category object already exists in the database.
 //		    Category existingCategory = currentSession.get(Category.class, category.getId());
-	//
+			//
 //		    // If the Category object does not exist in the database, save it to the database.
 //			if (fetchedCategory == null) {
 //				logger.info("Category is null");
 //				return;
 //			}
-			item.setItem_name(createItemName(item.getDescription()));
+			item.setItemName(createItemName(item.getDescription()));
 			item.setUnit_volume(item.getUnit_length() * item.getUnit_width() * item.getUnit_height());
 			item.setCategory(fetchedCategory);
 			item.setCreated_dttm(LocalDateTime.now());
@@ -72,8 +73,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 
 			logger.info("Item successfully added : " + item);
 			return item;
-		}
-		else {
+		} else {
 			logger.info("Item addition failed : " + item);
 			return item;
 		}
@@ -151,16 +151,16 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item findItemByname(String itemName) throws ItemNotFoundException, CategoryNotFoundException {
-		logger.info("" + itemName);
-		if (itemName.contains("%20")) {
-			itemName = itemName.replaceAll("%20", " ");
-			logger.info("Item without %20: " + itemName);
+	public Item findItemByDesc(String itemDesc) throws ItemNotFoundException, CategoryNotFoundException {
+		logger.info("" + itemDesc);
+		if (itemDesc.contains("%20")) {
+			itemDesc = itemDesc.replaceAll("%20", " ");
+			logger.info("Item without %20: " + itemDesc);
 		}
 
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Item> query = currentSession.createQuery("from Item where description = :description", Item.class);
-		query.setParameter("description", itemName);
+		query.setParameter("description", itemDesc);
 
 		List<Item> items = query.getResultList();
 		if (!items.isEmpty()) {
@@ -171,7 +171,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 
 		} else {
 			currentSession.close();
-			throw new ItemNotFoundException("Item Not Found : " + itemName);
+			throw new ItemNotFoundException("Item Not Found : " + itemDesc);
 		}
 
 	}
@@ -196,12 +196,12 @@ public class ItemRepositoryImpl implements ItemRepository {
 		Item existingItem = findItemById(item_id);
 		Category existingCategory = categoryRepository.getCategoryByName(item.getCategory().getCategory_name());
 		logger.info("" + existingCategory);
-		existingItem.setItem_name(item.getItem_name());
+		existingItem.setItemName(item.getItemName());
 		existingItem.setUnit_length(item.getUnit_length());
 		existingItem.setUnit_width(item.getUnit_width());
 		existingItem.setUnit_height(item.getUnit_height());
 		existingItem.setDescription(item.getDescription());
-		existingItem.setItem_name(item.getItem_name());
+		existingItem.setItemName(item.getItemName());
 		existingItem.setCategory(existingCategory);
 		existingItem.setLast_updated_dttm(LocalDateTime.now());
 		existingItem.setLast_updated_source("IMS");
@@ -211,11 +211,13 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item updateItemByItemName(String item_name, Item item)
+	public Item updateItemByItemName(Item item)
 			throws ItemNotFoundException, CategoryNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		logger.info("item : " + item);
-		Item existingItem = findItemByname(item_name);
+		logger.info("item_name : " + item.getItemName());
+
+		Item existingItem = findItemByName(item.getItemName());
 		logger.info("existingItem : " + existingItem);
 
 		logger.info("unit length : " + item.getUnit_length());
@@ -232,7 +234,9 @@ public class ItemRepositoryImpl implements ItemRepository {
 //		existingItem.setItem_name(item.getItem_name());
 		existingItem.setCategory(existingCategory);
 		existingItem.setLast_updated_dttm(LocalDateTime.now());
-		existingItem.setLast_updated_source("IMS");
+		if (!existingItem.getLast_updated_source().contains("CUBISCAN")) {
+			existingItem.setLast_updated_source("IMS");
+		}
 		currentSession.update(existingItem);
 		logger.info("Item updated : " + existingItem);
 		return existingItem;
@@ -249,11 +253,33 @@ public class ItemRepositoryImpl implements ItemRepository {
 
 	@Override
 	public Item deleteItemByItemName(String itemName) throws ItemNotFoundException, CategoryNotFoundException {
-		Item item = findItemByname(itemName);
+		Item item = findItemByName(itemName);
 		logger.info("Item to delete for : " + item);
 		Session currentSession = entityManager.unwrap(Session.class);
 		currentSession.delete(item);
 		return item;
+	}
+
+	@Override
+	public Item findItemByName(String itemName) throws ItemNotFoundException {
+		logger.info("" + itemName);
+
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<Item> query = currentSession.createQuery("from Item where itemName = :itemName", Item.class);
+		query.setParameter("itemName", itemName);
+
+		List<Item> items = query.getResultList();
+		if (!items.isEmpty()) {
+			Item item = items.get(0);
+			logger.info("Item : " + item);
+			currentSession.close();
+			return item;
+
+		} else {
+			currentSession.close();
+			throw new ItemNotFoundException("Item Not Found : " + itemName);
+		}
+
 	}
 
 }

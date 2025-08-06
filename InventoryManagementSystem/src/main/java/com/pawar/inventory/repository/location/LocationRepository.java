@@ -13,5 +13,6 @@ public interface LocationRepository {
 	public Location deleteLocationByLocationId(int locn_id);
 	public Location deleteLocationByLocationBarcode(String locn_brcd);
 	public Location updateOccupiedQty(Location location,int adjustQty);
+	public Iterable<Location> findLocationsByRange(String fromLocation, String toLocation);
 	
 }

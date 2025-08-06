@@ -22,4 +22,6 @@ public interface ASNRepository {
 	ASN getASNByName(String asnBrcd) throws NoResultException, ASNNotFoundException;
 
 	String receiveAsn(ASN asn, List<Lpn> lpns) throws LpnNotFoundException, NoResultException, ASNNotFoundException;
+
+	List<ASN> getAsnByCategory(String category);
 }

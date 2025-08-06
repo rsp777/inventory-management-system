@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.apache.http.ParseException;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpStatus;
@@ -19,10 +20,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
+import com.pawar.inventory.exceptions.InventoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
@@ -30,12 +33,14 @@ import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.service.InventoryService;
 
+import jakarta.persistence.NoResultException;
+
 @RestController
 @RequestMapping("/inventory")
 @EnableJpaRepositories
 public class InventoryController {
 
-	private final static Logger logger = Logger.getLogger(InventoryController.class.getName());
+	private final static org.slf4j.Logger logger = LoggerFactory.getLogger(InventoryController.class);
 
 	@Autowired
 	InventoryService inventoryService;
@@ -65,12 +70,13 @@ public class InventoryController {
 
 		} catch (ParseException e) {
 			e.printStackTrace();
-			return ResponseEntity.internalServerError().build();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return ResponseEntity.internalServerError().build();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (Exception e) {
-			return ResponseEntity.internalServerError().build();
+			e.printStackTrace();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 	}
@@ -113,32 +119,108 @@ public class InventoryController {
 	}
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
-	@PostMapping(value = "/checkActiveInventory", consumes = "application/json", produces = "application/json")
-	public ResponseEntity<?> checkActiveInventory(@RequestBody Map<String, Object> payload) {
-		Location existingActiveLocation;
-		;
+	@PostMapping(value = "/createActSop", consumes = "application/json", produces = "application/json")
+	public ResponseEntity<?> createActiveInventoryFromSop(@RequestBody Map<String, Object> payload) {
+		String response = "";
 		logger.info("Payload : " + payload);
 
-		@SuppressWarnings("unchecked")
+//		@SuppressWarnings("unchecked")
 		Map<String, Object> jsonMap = (Map<String, Object>) payload.get("inventory");
-		logger.info("Lpn : " + jsonMap);
+//		logger.info("LocationMap : " + jsonMap);
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
 
-		Lpn lpn = mapper.convertValue(jsonMap.get("lpn"), Lpn.class);
+		Item item = mapper.convertValue(jsonMap.get("item"), Item.class);
+		logger.info("Item : " + item);
+		String locnBrcd = (String) jsonMap.get("location");
+		logger.info("locnBrcd : {}",locnBrcd);
+		Location location = new Location(locnBrcd);
+		// Location location = mapper.convertValue(payload.get("location"),
+		// Location.class);
+		logger.info("Location : " + location);
+		logger.info("Creating Assignment for location : {} with item : {}", location, item);
 
 		try {
-			existingActiveLocation = inventoryService.checkActiveInventory(lpn);
-			logger.info("Response : " + existingActiveLocation);
-			return ResponseEntity.ok(existingActiveLocation);
+			response = inventoryService.createActiveInventoryFromSop(item, location);
+			logger.info("Response : " + response);
+			return ResponseEntity.ok(response);
 
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return ResponseEntity.internalServerError().build();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 
 		}
 
+	}
+
+	@CrossOrigin(origins = "*", allowedHeaders = "*")
+	@PostMapping(value = "/checkActiveInventory", consumes = "application/json", produces = "application/json")
+	public ResponseEntity<?> checkActiveInventory(@RequestBody Map<String, Object> payload) {
+		logger.info("Payload : " + payload);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> jsonMap = (Map<String, Object>) payload.get("inventory");
+
+		if (jsonMap.containsKey("lpn")) {
+			logger.info("Lpn : " + jsonMap);
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+
+			Lpn lpn = mapper.convertValue(jsonMap.get("lpn"), Lpn.class);
+
+			try {
+				Location existingActiveLocation = (Location) inventoryService.checkActiveInventory(lpn);
+				logger.info("Response : " + existingActiveLocation);
+				 return new ResponseEntity<String>(HttpStatus.OK);
+			} catch (InventoryNotFoundException | NoResultException e ) {
+				e.printStackTrace();
+				 return new ResponseEntity<String>(HttpStatus.NOT_FOUND);		
+			} 
+			catch (ParseException e) {
+				e.printStackTrace();
+				 return new ResponseEntity<String>("Invalid payload",HttpStatus.UNPROCESSABLE_ENTITY);		
+			} catch (Exception e) {
+				e.printStackTrace();
+				 return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);		
+			}
+		} else if (jsonMap.containsKey("item")) {
+			logger.info("Item : " + jsonMap);
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+
+			Item item = mapper.convertValue(jsonMap.get("item"), Item.class);
+			Inventory existingActiveInventory = new Inventory();
+			try {
+				 existingActiveInventory = (Inventory) inventoryService.checkActiveInventory(item);
+				logger.info("Response : " + existingActiveInventory);
+				 return new ResponseEntity<String>(HttpStatus.OK);
+			} catch (InventoryNotFoundException | NoResultException e ) {
+				logger.warn("Response : " + existingActiveInventory);
+				e.printStackTrace();
+				 return new ResponseEntity<String>(HttpStatus.NOT_FOUND);		
+				 } 
+			catch (ParseException e) {
+				e.printStackTrace();
+				 return new ResponseEntity<String>("Invalid payload",HttpStatus.UNPROCESSABLE_ENTITY);		
+			} catch (Exception e) {
+				e.printStackTrace();
+				 return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);		
+
+			}
+		} else {
+			return new ResponseEntity<>("Invalid payload", HttpStatus.UNPROCESSABLE_ENTITY);
+		}
 	}
 
 	@GetMapping("/list")
@@ -161,6 +243,7 @@ public class InventoryController {
 	@GetMapping("/list/by-lpn/{lpn_name}")
 	public Inventory getInventoryByLpn(@PathVariable String lpn_name) {
 		logger.info("LPN :" + lpn_name);
+
 		return inventoryService.getInventoryByLpn(lpn_name);
 	}
 
@@ -174,5 +257,22 @@ public class InventoryController {
 		inventoryService.deleteByInventoryLpn(lpn_name);
 		logger.info("Inventory deleted with lpn ");
 	}
-
+	
+	@DeleteMapping("/delete/location/{locnBrcd}/locnClass/{locnClass}")
+	public void deleteActiveInventoryByLocation(@PathVariable String locnBrcd,@PathVariable String locnClass) {
+		inventoryService.deleteActiveInventoryByLocation(locnBrcd,locnClass);
+		logger.info("Inventory deleted with locnBrcd ");
+	}
+	
+	@GetMapping("/locnBrcd/{locnBrcd}/locnClass/{locnClass}")
+	public ResponseEntity<List<Inventory>> getExistingInventories(@PathVariable String locnBrcd,@PathVariable String locnClass) {
+		try {
+			List<Inventory> inventories = inventoryService.getExistingInventories(locnBrcd,locnClass);
+			return new ResponseEntity<>(inventories, HttpStatus.OK);
+		} catch (Exception e) {
+			// Log the exception and return a user-friendly message
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+	
 }

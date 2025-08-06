@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,66 +31,75 @@ public class LocationController {
 
 	@Autowired
 	public LocationService locationService;
-	
+
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PostMapping(value = "/add", consumes = "application/json", produces = "application/json")
 	public ResponseEntity<?> createLocation(@RequestBody Map<String, Object> payload) {
 		logger.info("Payload : " + payload);
 
 		@SuppressWarnings("unchecked")
-		Map<String, Object> jsonMap = (Map<String, Object>)payload.get("location");
-		logger.info("Location : "+jsonMap);
+		Map<String, Object> jsonMap = (Map<String, Object>) payload.get("location");
+		logger.info("Location : " + jsonMap);
 		ObjectMapper mapper = new ObjectMapper();
-	    mapper.registerModule(new JavaTimeModule());
+		mapper.registerModule(new JavaTimeModule());
 
 		Location location = mapper.convertValue(jsonMap, Location.class);
-		
-		logger.info(""+location);
-		
+
+		logger.info("" + location);
+
 		locationService.createLocation(location);
-		return ResponseEntity.ok("Location Added Successfully : "+location.getLocn_brcd());
+		return ResponseEntity.ok("Location Added Successfully : " + location.getLocn_brcd());
 
 	}
+
+	@GetMapping("/list/by-range")
+	public Iterable<Location> findLocationsByRange(@RequestParam String fromLocation, @RequestParam String toLocation) {
+		logger.info("From Location: " + fromLocation);
+		logger.info("To Location: " + toLocation);
+		return locationService.findLocationsByRange(fromLocation,toLocation);
+	}
+
 	@GetMapping("/list")
 	public Iterable<Location> getfindAlllocations() {
 		Iterable<Location> locations = locationService.getfindAlllocations();
 		return locations;
 	}
-	
+
 	@GetMapping("/list/by-id/{locn_id}")
 	public Location findLocationById(@PathVariable int locn_id) {
-		logger.info("Input Location Id : "+locn_id);
+		logger.info("Input Location Id : " + locn_id);
 		return locationService.findLocationById(locn_id);
 	}
-	
+
 	@GetMapping("/list/by-name/{locn_brcd}")
 	public Location findLocationByBarcode(@PathVariable String locn_brcd) {
-		logger.info("Input Location Barcode : "+locn_brcd);
+		logger.info("Input Location Barcode : " + locn_brcd);
 		return locationService.findLocationByBarcode(locn_brcd);
 	}
-	
+
 	@PutMapping("/update/by-id/{locn_id}")
-	public ResponseEntity<?> updateLocationByLocationId(@PathVariable int locn_id,@RequestBody Location location){
-		logger.info("Update this location : "+location);
-		 location = locationService.updateLocationByLocationId(locn_id,location);
-		return ResponseEntity.ok("Location Edited Successfully : "+location.getLocn_brcd());
+	public ResponseEntity<?> updateLocationByLocationId(@PathVariable int locn_id, @RequestBody Location location) {
+		logger.info("Update this location : " + location);
+		location = locationService.updateLocationByLocationId(locn_id, location);
+		return ResponseEntity.ok("Location Edited Successfully : " + location.getLocn_brcd());
 	}
-	
+
 	@PutMapping("/update/by-name/{locn_brcd}")
-	public ResponseEntity<?> updateLocationByLocationBarcode(@PathVariable String locn_brcd,@RequestBody Location location){
-		logger.info("Update this location : "+location);
-		location = locationService.updateLocationByLocationBarcode(locn_brcd,location);
-		return ResponseEntity.ok("Location Edited Successfully : "+location.getLocn_brcd());
+	public ResponseEntity<?> updateLocationByLocationBarcode(@PathVariable String locn_brcd,
+			@RequestBody Location location) {
+		logger.info("Update this location : " + location);
+		location = locationService.updateLocationByLocationBarcode(locn_brcd, location);
+		return ResponseEntity.ok("Location Edited Successfully : " + location.getLocn_brcd());
 	}
-	
+
 	@DeleteMapping("/delete/by-id/{locn_id}")
-	public Location deleteLocationByLocationId(@PathVariable int locn_id){
+	public Location deleteLocationByLocationId(@PathVariable int locn_id) {
 		Location location = locationService.deleteLocationByLocationId(locn_id);
 		return location;
 	}
-	
+
 	@DeleteMapping("/delete/by-name/{locn_brcd}")
-	public Location deleteLocationByLocationBarcode(@PathVariable String locn_brcd){
+	public Location deleteLocationByLocationBarcode(@PathVariable String locn_brcd) {
 		Location location = locationService.deleteLocationByLocationBarcode(locn_brcd);
 		return location;
 	}

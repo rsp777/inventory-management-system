@@ -44,6 +44,10 @@ public class Lpn {
 	@JoinColumn(name = "asn_id")
 	private ASN asn;
 
+	@JsonProperty("asn_brcd")
+	@Column(name = "asn_brcd")
+	private String asn_brcd;
+
 	@Column(name = "quantity")
 	private int quantity;
 
@@ -83,6 +87,27 @@ public class Lpn {
 
 	public Lpn() {
 
+	}
+
+	public Lpn(int lpn_id, String lpn_name, Item item, ASN asn, String asn_brcd, int quantity, float length,
+			float width, float height, float weight, float volume, int lpn_facility_status, LocalDateTime created_dttm,
+			LocalDateTime last_updated_dttm, String created_source, String last_updated_source) {
+		this.lpn_id = lpn_id;
+		this.lpn_name = lpn_name;
+		this.item = item;
+		this.asn = asn;
+		this.asn_brcd = asn_brcd;
+		this.quantity = quantity;
+		this.length = length;
+		this.width = width;
+		this.height = height;
+		this.weight = weight;
+		this.volume = volume;
+		this.lpn_facility_status = lpn_facility_status;
+		this.created_dttm = created_dttm;
+		this.last_updated_dttm = last_updated_dttm;
+		this.created_source = created_source;
+		this.last_updated_source = last_updated_source;
 	}
 
 	public Lpn(int id, String lpn_name, Item item, ASN asn, int quantity, float length, float width, float height,
@@ -134,8 +159,8 @@ public class Lpn {
 
 	public Lpn(LpnDto lpnDto) throws ItemNotFoundException, CategoryNotFoundException {
 //		this.lpn_id = lpnDto.getId();
-		this.lpn_name = lpnDto.getLpnNumber();
-		this.item = getItem(lpnDto.getItemName());
+		this.lpn_name = lpnDto.getLpn_name();
+		this.item = getItem(lpnDto.getItem().getItemName());
 		this.quantity = lpnDto.getQuantity();
 		this.created_dttm = lpnDto.getCreated_dttm();
 		this.last_updated_dttm = lpnDto.getLast_updated_dttm();
@@ -173,6 +198,14 @@ public class Lpn {
 
 	public void setAsn(ASN asn) {
 		this.asn = asn;
+	}
+
+	public String getAsn_brcd() {
+		return asn_brcd;
+	}
+
+	public void setAsn_brcd(String asn_brcd) {
+		this.asn_brcd = asn_brcd;
 	}
 
 	public int getQuantity() {
@@ -265,10 +298,10 @@ public class Lpn {
 
 	@Override
 	public String toString() {
-		return "Lpn [id=" + lpn_id + ", lpn_name=" + lpn_name + ", item=" + item + ", quantity=" + quantity
-				+ ", length=" + length + ", width=" + width + ", height=" + height + ", weight=" + weight + ", volume="
-				+ volume + ", lpn_facility_status=" + lpn_facility_status + ", created_dttm=" + created_dttm
-				+ ", last_updated_dttm=" + last_updated_dttm + ", created_source=" + created_source
-				+ ", last_updated_source=" + last_updated_source + "]";
+		return "Lpn [lpn_id=" + lpn_id + ", lpn_name=" + lpn_name + ", item=" + item + ", asn_brcd=" + asn_brcd
+				+ ", quantity=" + quantity + ", length=" + length + ", width=" + width + ", height=" + height
+				+ ", weight=" + weight + ", volume=" + volume + ", lpn_facility_status=" + lpn_facility_status
+				+ ", created_dttm=" + created_dttm + ", last_updated_dttm=" + last_updated_dttm + ", created_source="
+				+ created_source + ", last_updated_source=" + last_updated_source + "]";
 	}
 }

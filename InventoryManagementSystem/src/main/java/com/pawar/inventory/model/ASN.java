@@ -14,14 +14,11 @@ import com.pawar.inventory.entity.LpnDto;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 @Entity
@@ -31,7 +28,7 @@ public class ASN {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "asn_id")
-	@JsonProperty("asnId")
+	@JsonProperty("id")
 	private Integer id;
 
 	@Column(name = "asn_brcd")
@@ -83,7 +80,7 @@ public class ASN {
 	public ASN(ASNDto asnDto) throws ItemNotFoundException, CategoryNotFoundException {
 //		this.id = asnDto.getId();
 		this.asnBrcd = asnDto.getAsnBrcd();
-		this.lpns = convertLpnDtoToEntity(asnDto.getLpn());
+		this.lpns = convertLpnDtoToEntity(asnDto.getLpns());
 		this.totalQuantity = asnDto.getTotalQuantity();
 		this.created_dttm = asnDto.getCreated_dttm();
 		this.last_updated_dttm = asnDto.getLast_updated_dttm();
@@ -102,11 +99,11 @@ public class ASN {
 		return lpns;
 	}
 
-	public int getAsnId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setAsnId(int id) {
+	public void setId(int id) {
 		this.id = id;
 	}
 

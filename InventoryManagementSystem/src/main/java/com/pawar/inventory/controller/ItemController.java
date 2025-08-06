@@ -86,17 +86,29 @@ public class ItemController {
 	}
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
-	@GetMapping("/list/by-name/{itemName}")
-	public ResponseEntity<Item> findItemByName(@PathVariable String itemName) {
+	@GetMapping("/list/by-desc/{itemDesc}")
+	public ResponseEntity<Item> findItemByDesc(@PathVariable String itemDesc) {
 		try {
-			Item item = itemService.findItemByname(itemName);
+			Item item = itemService.findItemByDesc(itemDesc);
 			return new ResponseEntity<>(item, HttpStatus.OK);
 		} catch (ItemNotFoundException | CategoryNotFoundException e) {
 			// Log the exception and return a user-friendly message
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
-
+	
+	@CrossOrigin(origins = "*", allowedHeaders = "*")
+	@GetMapping("/list/by-name/{itemName}")
+	public ResponseEntity<Item> findItemByName(@PathVariable String itemName) {
+		try {
+			Item item = itemService.findItemByName(itemName);
+			return new ResponseEntity<>(item, HttpStatus.OK);
+		} catch (ItemNotFoundException e) {
+			// Log the exception and return a user-friendly message
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+	
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
 	@PutMapping("/update/by-id/{item_id}")
 	public Item updateItemByItemId(@PathVariable int item_id, @RequestBody Item item) {
@@ -106,16 +118,17 @@ public class ItemController {
 	}
 
 	@CrossOrigin(origins = "*", allowedHeaders = "*")
-	@PutMapping("/update/by-name/{itemName}")
-	public ResponseEntity<?> updateItemByItemName(@PathVariable String itemName, @RequestBody Map<String, Object> itemPayload) {
-		logger.info("Update this item : " + itemName);
+	@PutMapping("/update")
+	public ResponseEntity<?> updateItemByItemName(@RequestBody Map<String, Object> itemPayload) {
 		Map<String, Object> jsonMap = (Map<String, Object>) itemPayload.get("item");
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
 		Item item = mapper.convertValue(jsonMap, Item.class);
+		logger.info("Update this item : " + item.getDescription());
+
 		try {
 			
-			item = itemService.updateItemByItemName(itemName, item);
+			item = itemService.updateItemByItemName(item);
 		} catch (ItemNotFoundException | CategoryNotFoundException e) {
 
 			e.printStackTrace();
