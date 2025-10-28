@@ -1,5 +1,6 @@
 package com.pawar.inventory.service;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.exceptions.LpnNotFoundException;
+import com.pawar.inventory.model.ASN;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.lpn.LpnRepository;
@@ -29,6 +31,7 @@ public class LpnService {
 		return lpnRepository.createLpn(lpn,item);
 
 	}
+	
 
 	@Transactional
 	public Lpn getLpnByName(String lpn_name) throws LpnNotFoundException {
@@ -77,4 +80,11 @@ public class LpnService {
 		// TODO Auto-generated method stub
 		return lpnRepository.deallocateLpn(lpnName);
 	}
+
+
+	public List<Lpn> findLpnByCategory(String category) throws LpnNotFoundException {
+		// TODO Auto-generated method stub
+		return lpnRepository.findLpnByCategory(category);
+	}
+
 }

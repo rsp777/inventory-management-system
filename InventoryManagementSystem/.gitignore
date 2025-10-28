@@ -31,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+**/logs/**
+
+
+# Add: Ignore all YAML files (new section from suggestions)
+*.yaml
+*.yml
+
+# Add: Ignore files and directories starting with a dot (e.g., .git, .DS_Store)
+# This will ignore any file or directory starting with '.', building on your existing patterns.
+# Note: If you only want directories, this might include files too; adjust if needed.
+.*

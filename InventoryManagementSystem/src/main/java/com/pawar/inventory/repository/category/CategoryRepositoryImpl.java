@@ -39,13 +39,8 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 	public Iterable<Category> getfindAllCategories() {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Category> query = currentSession.createQuery("from Category", Category.class);
-		logger.info("Query : " + query.toString());
-
 		List<Category> listCategories = query.getResultList();
-		for (Iterator<Category> iterator = listCategories.iterator(); iterator.hasNext();) {
-			Category category = (Category) iterator.next();
-			logger.info("Category Data : " + category);
-		}
+		logger.info(""+listCategories);
 		return listCategories;
 	}
 

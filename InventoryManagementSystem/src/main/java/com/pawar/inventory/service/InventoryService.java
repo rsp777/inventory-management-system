@@ -14,12 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
+import com.pawar.inventory.exceptions.InventoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.inventory.InventoryRepository;
+
+import jakarta.persistence.NoResultException;
 
 @Service
 public class InventoryService {
@@ -34,7 +37,13 @@ public class InventoryService {
 
 	@Autowired
 	LocationService locationService;
-
+	
+	@Autowired
+	ASNService asnService;
+	
+	@Autowired
+	LpnService lpnService;
+	
 	@Transactional
 	public Inventory createInventory(Lpn lpn,Session currentSession) {
 		logger.info("Inventory needed to be created for LPN : " + lpn);
@@ -66,7 +75,7 @@ public class InventoryService {
 	@Transactional
 	public List<Inventory> getInventorybyItem(String item_name) throws ItemNotFoundException, CategoryNotFoundException  {
 		// TODO Auto-generated method stub
-		Item item = itemService.findItemByname(item_name);
+		Item item = itemService.findItemByName(item_name);
 		return inventoryRepository.getInventorybyItem(item);
 	}
 
@@ -93,9 +102,24 @@ public class InventoryService {
 	public Inventory updateInventoryQty(Inventory inventory,int adjustQty){
 		return inventoryRepository.updateInventoryQty(inventory, adjustQty);
 	}
-	
+
 	@Transactional
-	public void updateInventory(Lpn lpn){
-		 inventoryRepository.updateInventory(lpn);
+	public Object checkActiveInventory(Object object) throws InventoryNotFoundException,NoResultException {
+		// TODO Auto-generated method stub
+		return inventoryRepository.checkActiveInventory(object);
+	}
+
+	public String createActiveInventoryFromSop(Item item, Location location) throws ClientProtocolException, IOException {
+		// TODO Auto-generated method stub
+		return inventoryRepository.createActiveInventoryFromSop(item,location);
+	}
+	
+	public List<Inventory> getExistingInventories(String locnBrcd, String locnClass){
+		return inventoryRepository.getExistingInventories(locnBrcd, locnClass);
+	}
+
+	public void deleteActiveInventoryByLocation(String locnBrcd, String locnClass) {
+		inventoryRepository.deleteActiveInventoryByLocation(locnBrcd, locnClass);
+		
 	}
 }

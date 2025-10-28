@@ -47,7 +47,8 @@ public class LocationRepositoryImpl implements LocationRepository {
 			Query<Category> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Category.class);
 			location.setCreated_dttm(LocalDateTime.now());
 			location.setLast_updated_dttm(LocalDateTime.now());
-			System.out.println("location.getLast_updated_source() != null : " + location.getLast_updated_source() != null);
+			System.out.println(
+					"location.getLast_updated_source() != null : " + location.getLast_updated_source() != null);
 			if (location.getLast_updated_source() != null && location.getCreated_source() != null) {
 				location.setCreated_source(location.getCreated_source());
 				location.setLast_updated_source(location.getLast_updated_source());
@@ -57,7 +58,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 			}
 			query.executeUpdate();
 			currentSession.saveOrUpdate(location);
-			logger.info("Location Saved : "+location);
+			logger.info("Location Saved : " + location);
 			return location;
 		}
 		return null;
@@ -67,6 +68,25 @@ public class LocationRepositoryImpl implements LocationRepository {
 	public Iterable<Location> getfindAlllocations() {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Location> query = currentSession.createQuery("from Location", Location.class);
+		logger.info("Query : " + query.toString());
+		List<Location> listLocations = query.getResultList();
+		for (Iterator<Location> iterator = listLocations.iterator(); iterator.hasNext();) {
+			Location location = (Location) iterator.next();
+			logger.info("location Data : " + location);
+		}
+		return listLocations;
+	}
+
+	@Override
+	public Iterable<Location> findLocationsByRange(String fromLocation, String toLocation) {
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<Location> query = currentSession.createQuery(
+				"FROM Location l WHERE l.locnBrcd >= :fromLocation AND l.locnBrcd <= :toLocation",
+				Location.class);
+		query.setParameter("fromLocation", fromLocation);
+		query.setParameter("toLocation", toLocation);
+
+
 		logger.info("Query : " + query.toString());
 		List<Location> listLocations = query.getResultList();
 		for (Iterator<Location> iterator = listLocations.iterator(); iterator.hasNext();) {
@@ -89,7 +109,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 		} catch (NoResultException e) {
 			return null;
 		}
-		
+
 	}
 
 	@Override
@@ -112,6 +132,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 		Location existingLocation = findLocationById(locn_id);
 		logger.info("" + existingLocation);
 		existingLocation.setLocn_brcd(location.getLocn_brcd());
+		existingLocation.setGrp(location.getGrp());
 		existingLocation.setLocn_class(location.getLocn_class());
 		existingLocation.setLength(location.getLength());
 		existingLocation.setWidth(location.getWidth());
@@ -135,6 +156,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 		Location existingLocation = findLocationByBarcode(locn_brcd);
 		logger.info("" + existingLocation);
 		existingLocation.setLocn_brcd(location.getLocn_brcd());
+		existingLocation.setGrp(location.getGrp());
 		existingLocation.setLocn_class(location.getLocn_class());
 		existingLocation.setLength(location.getLength());
 		existingLocation.setWidth(location.getWidth());
@@ -152,14 +174,14 @@ public class LocationRepositoryImpl implements LocationRepository {
 		return existingLocation;
 	}
 
-	public Location updateOccupiedQty(Location location,int adjustQty){
+	public Location updateOccupiedQty(Location location, int adjustQty) {
 		logger.info("Location : " + location);
-		logger.info("Quantity to be adjusted: " +adjustQty);
+		logger.info("Quantity to be adjusted: " + adjustQty);
 		Session currentSession = entityManager.unwrap(Session.class);
 		location.setOccupied_qty(location.getOccupied_qty() - adjustQty);
 		currentSession.saveOrUpdate(location);
 		return location;
-	}	
+	}
 
 	@Override
 	public Location deleteLocationByLocationId(int locn_id) {

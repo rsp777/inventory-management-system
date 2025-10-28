@@ -1,6 +1,7 @@
 package com.pawar.inventory.constants;
 
 public interface LpnFacilityStatusContants {
+	public static final int IN_TRANSIT = 0;
 	public static final int CREATED = 10;
 	public static final int PUTAWAY = 30;
 	public static final int ALLOCATED = 50;

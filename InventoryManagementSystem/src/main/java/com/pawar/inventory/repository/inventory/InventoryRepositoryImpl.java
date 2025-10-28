@@ -2,9 +2,9 @@ package com.pawar.inventory.repository.inventory;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -16,18 +16,26 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.pawar.inventory.constants.LocationClassConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
+import com.pawar.inventory.exceptions.InventoryNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
+import com.pawar.inventory.repository.item.ItemRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -35,7 +43,7 @@ import jakarta.persistence.NoResultException;
 @Repository
 public class InventoryRepositoryImpl implements InventoryRepository {
 
-	private final static Logger logger = Logger.getLogger(InventoryRepositoryImpl.class.getName());
+	private final static Logger logger = LoggerFactory.getLogger(InventoryRepositoryImpl.class);
 	private EntityManager entityManager;
 	private final HttpClient httpClient;
 	private final ObjectMapper objectMapper;
@@ -44,6 +52,9 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	//
 	// @Autowired
 	// LocationService locationService;
+
+	@Autowired
+	private ItemRepository itemRepository;
 
 	public InventoryRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
@@ -80,86 +91,42 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	public String createReserveInventory(Lpn lpn, Location location) throws ParseException, IOException {
 		String responseResv = "";
 		logger.info("Reserve inventory : " + lpn + " " + location);
-		String url = "http://localhost:8085/lpns/list/by-name/" + lpn.getLpn_name();
-		logger.info("URL :" + url);
-		HttpGet request = new HttpGet(url);
-		HttpResponse response = httpClient.execute(request);
-		HttpEntity entity = response.getEntity();
-		String json = EntityUtils.toString(entity);
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		Lpn fetchedLpn = objectMapper.readValue(json, Lpn.class);
-		logger.info("" + fetchedLpn);
+		String lpnName = lpn.getLpn_name();
+		String locnBrcd = location.getLocn_brcd();
+		Lpn fetchedLpn = fetchLpn(lpnName);
+		Location fetchedLocation = fetchLocation(locnBrcd);
+		Inventory inventory = getInventoryByLpn(lpnName);
+		logger.info("Fetched Lpn " + fetchedLpn);
+		logger.info("Fetched Location " + fetchedLocation);
+		logger.info("Inventory fetched from : " + inventory);
 
-		String url2 = "http://localhost:8085/locations/list/by-name/" + location.getLocn_brcd();
-		logger.info("URL :" + url2);
-		HttpGet request2 = new HttpGet(url2);
-		HttpResponse response2 = httpClient.execute(request2);
-		logger.info("Response : " + response2.getStatusLine());
-		HttpEntity entity2 = response2.getEntity();
-		String json2 = EntityUtils.toString(entity2);
-		logger.info("json location data :" + json2);
+		Session currentSession = currentSession();
+		setForeignChecks(currentSession, 1, Inventory.class);
 
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		Location fetchedLocation = objectMapper.readValue(json2, Location.class);
-		logger.info("" + fetchedLocation);
-
-		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Inventory.class);
-		query.executeUpdate();
-		int availableSpaceOnLocation = (int) (fetchedLocation.getMax_qty() - fetchedLocation.getOccupied_qty());
-		Inventory inventory = getInventoryByLpn(fetchedLpn.getLpn_name());
-		logger.info("Lpn fetched from Lpn : " + inventory);
-
-		if (fetchedLpn.getLength() <= fetchedLocation.getLength() && fetchedLpn.getWidth() <= fetchedLocation.getWidth()
-				&& fetchedLpn.getHeight() <= fetchedLocation.getHeight()
-				&& fetchedLpn.getQuantity() <= availableSpaceOnLocation
-				&& fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()
-				&& fetchedLocation.getLocn_class().equals("R")
-				&& fetchedLpn.getLpn_facility_status() != LpnFacilityStatusContants.CONSUMED_TO_ACTIVE) {
-
-			inventory.setLocation(fetchedLocation);
-			inventory.setLocn_class(fetchedLocation.getLocn_class());
-			fetchedLpn.setLpn_facility_status(LpnFacilityStatusContants.PUTAWAY);
-			fetchedLocation.setCurr_vol(fetchedLpn.getVolume() + fetchedLocation.getCurr_vol());
-			fetchedLocation.setOccupied_qty(fetchedLocation.getOccupied_qty() + fetchedLpn.getQuantity());
-			fetchedLocation.setLast_updated_dttm(LocalDateTime.now());
-			fetchedLocation.setLast_updated_source("Lpn Management");
+		boolean canFitInLocation = canFitInLocation(fetchedLpn, fetchedLocation, LocationClassConstants.RESERVE);
+		if (canFitInLocation) {
+			String locnClass = fetchedLocation.getLocn_class();
+			updateLocation(fetchedLocation, inventory, currentSession);
+			updateInventory(fetchedLpn, fetchedLocation, locnClass, currentSession);
+			updateLpn(fetchedLpn, inventory, LpnFacilityStatusContants.PUTAWAY);
 			logger.info("LPN to locate to a Reserve Location successfully : " + inventory.getLpn().getLpn_name());
-
-			currentSession.merge(fetchedLocation);
-			currentSession.merge(fetchedLpn);
-			currentSession.merge(inventory);
+			saveData(currentSession, fetchedLocation, fetchedLpn, inventory);
 
 			logger.info("LPN located to a Reserve Location successfully : " + inventory);
 			String invLpn = inventory.getLpn().getLpn_name();
 			String resvLocn = inventory.getLocation().getLocn_brcd();
 			responseResv = "LPN " + invLpn + " located to a Reserve Location successfully : " + resvLocn;
-//			logger.info("responseResv : "+responseResv);
 			return responseResv;
 		}
 
 		else {
-			logger.info("IF CONDITION : " + (fetchedLpn.getLength() <= fetchedLocation.getLength()
-					&& fetchedLpn.getWidth() <= fetchedLocation.getWidth()
-					&& fetchedLpn.getHeight() <= fetchedLocation.getHeight()
-					&& fetchedLpn.getQuantity() <= availableSpaceOnLocation
-					&& fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()
-					&& fetchedLocation.getLocn_class() == "R"));
-
-			logger.info("Length : " + (fetchedLpn.getLength() <= fetchedLocation.getLength()));
-			logger.info("Width : " + (fetchedLpn.getWidth() <= fetchedLocation.getWidth()));
-			logger.info("Height : " + (fetchedLpn.getHeight() <= fetchedLocation.getHeight()));
-			logger.info("Available Space on Location : " + (fetchedLpn.getQuantity() <= availableSpaceOnLocation));
-			logger.info("Volume : " + (fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()));
-			logger.info("Location Class : " + (fetchedLocation.getLocn_class().equals("R")));
-			logger.info("Fetched Location : " + (fetchedLocation.getLocn_class()));
 
 			logger.info("Lpn can't fit in the Reserve Location");
 			String invLpn = fetchedLpn.getLpn_name();
 			String resvLocn = fetchedLocation.getLocn_brcd();
 			responseResv = "LPN " + invLpn + " can't fit in the Reserve Location : " + resvLocn;
-			logger.info("LPN  : " + invLpn);
-			logger.info("Reserve Location  : " + resvLocn);
+			logger.debug("LPN  : " + invLpn);
+			logger.debug("Reserve Location  : " + resvLocn);
 			logger.info("Response : " + responseResv);
 			return responseResv;
 		}
@@ -168,113 +135,44 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 
 	@Override
 	public String createActiveInventory(Lpn lpn, Location location) throws ClientProtocolException, IOException {
-		logger.info("Active inventory : " + lpn + " " + location);
-		String url = "http://localhost:8085/lpns/list/by-name/" + lpn.getLpn_name();
-		logger.info("URL :" + url);
-		HttpGet request = new HttpGet(url);
-		HttpResponse response = httpClient.execute(request);
-		HttpEntity entity = response.getEntity();
-		String json = EntityUtils.toString(entity);
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		Lpn fetchedLpn = objectMapper.readValue(json, Lpn.class);
+		String lpnName = lpn.getLpn_name();
+		Lpn fetchedLpn = fetchLpn(lpnName);
+		String locnBrcd = location.getLocn_brcd();
+		Location fetchedLocation = fetchLocation(locnBrcd);
 		logger.info("Fetched Lpn" + fetchedLpn);
-
-		String url2 = "http://localhost:8085/locations/list/by-name/" + location.getLocn_brcd();
-		logger.info("URL :" + url2);
-		HttpGet request2 = new HttpGet(url2);
-		HttpResponse response2 = httpClient.execute(request2);
-		logger.info("Response : " + response2.getStatusLine());
-		HttpEntity entity2 = response2.getEntity();
-		String json2 = EntityUtils.toString(entity2);
-		logger.info("json location data :" + json2);
-
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		Location fetchedLocation = objectMapper.readValue(json2, Location.class);
-		logger.info("" + fetchedLocation);
+		logger.info("Fetched Location" + fetchedLocation);
 		String reponseInv = "";
 		int availableSpaceOnLocation = (int) (fetchedLocation.getMax_qty() - fetchedLocation.getOccupied_qty());
-		if (fetchedLpn.getLength() <= fetchedLocation.getLength() && fetchedLpn.getWidth() <= fetchedLocation.getWidth()
-				&& fetchedLpn.getHeight() <= fetchedLocation.getHeight()
-				&& fetchedLpn.getQuantity() <= availableSpaceOnLocation
-				&& fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()
-				&& fetchedLocation.getLocn_class().equals("A") && fetchedLpn.getLpn_facility_status() != 96) {
+		if (canFitInLocation(fetchedLpn, fetchedLocation, LocationClassConstants.ACTIVE)) {
 
-			Session currentSession = entityManager.unwrap(Session.class);
-			Query<Inventory> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Inventory.class);
-			query.executeUpdate();
+			Session currentSession = currentSession();
+			setForeignChecks(currentSession, 1, Inventory.class);
 
-			query = currentSession.createQuery(
-					"from Inventory i where i.location.locnBrcd = :locnBrcd and i.location.locnClass = :locnClass",
-					Inventory.class);
-			query.setParameter("locnBrcd", fetchedLocation.getLocn_brcd());
-			query.setParameter("locnClass", fetchedLocation.getLocn_class());
+			List<Inventory> existingInventories = getExistingInventories(fetchedLocation.getLocn_brcd(),
+					fetchedLocation.getLocn_class(), currentSession);
 
-			List<Inventory> existingInventories = query.getResultList();
 			logger.info("Existing ActiveInv : " + existingInventories);
 			Inventory inventory;
-
 			if (!existingInventories.isEmpty()) {
-				// If an active inventory already exists, update the on_hand_qty
-
-				inventory = existingInventories.get(0);
-				logger.info("Existing Active Inventories : " + inventory);
-
-				logger.info("Active Location : " + fetchedLocation.getLocn_brcd() + " has space : "
-						+ fetchedLocation.getMax_qty() + " - " + inventory.getOn_hand_qty() + " = "
-						+ (fetchedLocation.getMax_qty() - inventory.getOn_hand_qty()));
-				if ((fetchedLocation.getMax_qty()) >= (inventory.getOn_hand_qty() + fetchedLpn.getQuantity())) {
-					inventory.setOn_hand_qty(inventory.getOn_hand_qty() + fetchedLpn.getQuantity());
-				} else {
-					logger.info("No Space for the lpn : " + fetchedLpn);
-				}
-
-				logger.info("Active Inventory already exists, Updating On hand quantity");
+				inventory = updateExistingInventories(fetchedLocation, existingInventories, fetchedLpn);
 
 			} else {
-				// If there is no active inventory, create a new one
-				logger.info("Active Inventory do not exists, Creating New");
-				inventory = new Inventory();
-				inventory.setItem(fetchedLpn.getItem());
-				inventory.setLocation(fetchedLocation);
-				inventory.setLocn_class(fetchedLocation.getLocn_class());
-				inventory.setOn_hand_qty(fetchedLpn.getQuantity());
-				inventory.setCreated_dttm(LocalDateTime.now());
-				inventory.setCreated_source("Inventory Management System");
+				logger.info("Inventory do not exists, Creating New");
+				Item item = fetchedLpn.getItem();
+				String locnClass = fetchedLocation.getLocn_class();
+				int lpn_qty = fetchedLpn.getQuantity();
+				String created_source = "Inventory Management System";
+				inventory = createNewActiveInventory(item, fetchedLocation, locnClass, lpn_qty, created_source);
 			}
-			fetchedLpn.setLpn_facility_status(LpnFacilityStatusContants.CONSUMED_TO_ACTIVE);
-			inventory.setLast_updated_dttm(LocalDateTime.now());
-			inventory.setLast_updated_source("Inventory Management System");
-			fetchedLocation.setCurr_vol(fetchedLpn.getVolume() + fetchedLocation.getCurr_vol());
-			logger.info("Occupied qty : " + fetchedLocation.getOccupied_qty() + "   +   " + fetchedLpn.getQuantity()
-					+ "  =  " + fetchedLocation.getOccupied_qty() + fetchedLpn.getQuantity());
-			fetchedLocation.setOccupied_qty(fetchedLocation.getOccupied_qty() + fetchedLpn.getQuantity());
-			fetchedLocation.setLast_updated_dttm(inventory.getLast_updated_dttm());
-			fetchedLocation.setLast_updated_source(inventory.getLast_updated_source());
-
-//			if (inventory.getLocation().getLocn_class().equals('R')) {
+			updateLpn(fetchedLpn, inventory, LpnFacilityStatusContants.CONSUMED_TO_ACTIVE);
+			updateLocation(fetchedLocation, inventory, currentSession);
 			deleteByInventoryLpn(fetchedLpn.getLpn_name());
 
-//			}
-
-			String url3 = "http://localhost:8085/lpns/delete/by-name/" + fetchedLpn.getLpn_name();
-			logger.info("URL :" + url3);
-			HttpDelete request3 = new HttpDelete(url3);
-			logger.info("request3 : " + request3);
-			HttpResponse response3 = httpClient.execute(request3);
-			logger.info("response3 : " + response3.getEntity());
-
-			logger.info("Response : " + response3.getStatusLine());
-//			HttpEntity entity3 = response3.getEntity();
-//			String json3 = EntityUtils.toString(entity3);
-			logger.info("json Lpn deleted data :" + fetchedLpn.getLpn_name());
-
-			// lpnService.deleteLpnByLpnBarcode(fetchedLpn.getLpn_name());
-			currentSession.saveOrUpdate(inventory);
-			currentSession.merge(fetchedLocation);
-			currentSession.merge(fetchedLpn);
+			logger.info("Occupied qty : " + fetchedLocation.getOccupied_qty() + "   +   " + fetchedLpn.getQuantity()
+					+ "  =  " + fetchedLocation.getOccupied_qty() + fetchedLpn.getQuantity());
+			saveData(currentSession, fetchedLocation, fetchedLpn, inventory);
 			logger.info("LPN located to a Active Location successfully : " + inventory);
 
-			getInventoryByLpn(fetchedLpn.getLpn_name());
 			reponseInv = "LPN " + fetchedLpn.getLpn_name() + " located to a Active Location "
 					+ fetchedLocation.getLocn_brcd() + " successfully";
 			return reponseInv;
@@ -294,31 +192,258 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 					+ availableSpaceOnLocation + " LPN Quantity : " + fetchedLpn.getQuantity();
 
 			logger.info(reponseInv);
-			logger.info("" + (fetchedLpn.getLength() <= fetchedLocation.getLength()
-					&& fetchedLpn.getWidth() <= fetchedLocation.getWidth()
-					&& fetchedLpn.getHeight() <= fetchedLocation.getHeight()
-					&& fetchedLpn.getQuantity() <= availableSpaceOnLocation
-					&& fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()
-					&& fetchedLocation.getLocn_class().equals("A")));
-
-			logger.info("Length : " + (fetchedLpn.getLength() <= fetchedLocation.getLength()));
-			logger.info("Width : " + (fetchedLpn.getWidth() <= fetchedLocation.getWidth()));
-			logger.info("Height : " + (fetchedLpn.getHeight() <= fetchedLocation.getHeight()));
-			logger.info("Quantity : " + (fetchedLpn.getQuantity() <= fetchedLocation.getMax_qty()));
-			logger.info("Quantity 2: " + (fetchedLocation.getOccupied_qty() <= fetchedLocation.getMax_qty()));
-			logger.info("Volume : " + (fetchedLpn.getVolume() <= fetchedLocation.getMax_volume()));
-			logger.info("Location Class : " + (fetchedLocation.getLocn_class().equals("A")));
-			logger.info("Fetched Location : " + (fetchedLocation.getLocn_class()));
 			return reponseInv;
 		}
 
 	}
 
 	@Override
+	public Object checkActiveInventory(Object object) throws InventoryNotFoundException, NoResultException {
+		Session currentSession = currentSession();
+		Location location = new Location();
+
+		if (object != null && object instanceof Item) {
+
+			Item item = (Item) object;
+
+			List<Inventory> fetchedInventories = getInventorybyItem(item);
+			logger.info("fetchedInventories.isEmpty() : {}", fetchedInventories.isEmpty());
+			if (!fetchedInventories.isEmpty()) {
+				Inventory inventory = fetchedInventories.get(0); // Get the first result
+				return inventory; // Return the location from the inventory
+			} else {
+				throw new InventoryNotFoundException("No inventory found");
+			}
+
+		} else if (object != null && object instanceof Lpn) {
+			Lpn lpn = (Lpn) object;
+
+			Item fetchedItem = getInventoryByLpn(lpn.getLpn_name()).getItem();
+			int itemId = fetchedItem.getItem_id();
+			String locn_class = LocationClassConstants.ACTIVE;
+
+			Query<Inventory> query = currentSession.createQuery(
+					"from Inventory i where i.item.item_id = :item_id and i.locn_class = :locn_class", Inventory.class);
+			query.setParameter("item_id", itemId);
+			query.setParameter("locn_class", locn_class);
+			List<Inventory> existingInventories = query.getResultList();
+			try {
+				Inventory inventory = query.getSingleResult();
+				if (inventory != null) {
+					location = inventory.getLocation();
+					return location;
+				}
+
+			} catch (NoResultException e) {
+				// Handle the case where no result is found
+				logger.warn("No inventory found for item_id: {} and locn_class: {}", itemId, locn_class);
+
+				throw new InventoryNotFoundException("No inventory found");
+			}
+		}
+
+		return null;
+
+	}
+
+	public void saveData(Session currentSession, Location location, Lpn lpn, Inventory inventory) {
+		currentSession.merge(location);
+		currentSession.merge(lpn);
+		currentSession.merge(inventory);
+	}
+
+	public void saveSOPData(Session currentSession, Inventory inventory) {
+
+		currentSession.save(inventory);
+	}
+
+	public void updateLocation(Location location, Inventory inventory, Session currentSession) {
+		Location prevLocation = inventory.getLocation();
+		String prevLocnClass = inventory.getLocn_class();
+		if (prevLocnClass != null && prevLocation != null) {
+			logger.info("prevLocnClass : {}", prevLocnClass);
+			if (prevLocation != location) {
+				prevLocation.setCurr_vol(prevLocation.getCurr_vol()
+						- (inventory.getItem().getUnit_volume() * inventory.getOn_hand_qty()));
+				prevLocation.setOccupied_qty((prevLocation.getOccupied_qty() - inventory.getOn_hand_qty()));
+				location.setCurr_vol(
+						location.getCurr_vol() + (inventory.getItem().getUnit_volume() * inventory.getOn_hand_qty()));
+				location.setOccupied_qty(location.getOccupied_qty() + inventory.getOn_hand_qty());
+				prevLocation.setLast_updated_dttm(LocalDateTime.now());
+				prevLocation.setLast_updated_source(inventory.getLast_updated_source());
+				currentSession.merge(prevLocation);
+				logger.info("Previous Location : {}", prevLocation);
+
+			} else {
+				logger.info("inventory : {}", inventory);
+				location.setCurr_vol(
+						location.getCurr_vol() + (inventory.getOn_hand_qty() * inventory.getItem().getUnit_volume()));
+				location.setOccupied_qty(location.getOccupied_qty() + inventory.getOn_hand_qty());
+				prevLocation.setLast_updated_dttm(LocalDateTime.now());
+				prevLocation.setLast_updated_source(inventory.getLast_updated_source());
+				currentSession.merge(prevLocation);
+				logger.info("Previous Location : {}", prevLocation);
+
+			}
+		} else {
+			location.setCurr_vol(location.getCurr_vol() + inventory.getLpn().getVolume());
+			location.setOccupied_qty(location.getOccupied_qty() + inventory.getOn_hand_qty());
+		}
+
+		location.setLast_updated_dttm(LocalDateTime.now());
+		location.setLast_updated_source(inventory.getLast_updated_source());
+		logger.info("Updated Location : {}", location);
+		currentSession.merge(location);
+	}
+
+	public void updateLpn(Lpn lpn, Inventory inventory, int lpnFacilityStatus) {
+		lpn.setLpn_facility_status(lpnFacilityStatus);
+		lpn.setLast_updated_dttm(LocalDateTime.now());
+		lpn.setLast_updated_source(inventory.getLast_updated_source());
+	}
+
+	public Inventory createNewActiveInventory(Item item, Location fetchedLocation, String locnClass, int qty,
+			String source) {
+		Inventory inventory = new Inventory();
+		inventory.setItem(item);
+		inventory.setLocation(fetchedLocation);
+		inventory.setLocn_class(locnClass);
+		inventory.setOn_hand_qty(qty);
+		inventory.setCreated_dttm(LocalDateTime.now());
+		inventory.setCreated_source(source);
+		inventory.setLast_updated_dttm(LocalDateTime.now());
+		inventory.setLast_updated_source(source);
+		return inventory;
+	}
+
+	private Inventory updateExistingInventories(Location fetchedLocation, List<Inventory> existingInventories,
+			Lpn fetchedLpn) {
+		Inventory inventory = existingInventories.get(0);
+		logger.info("Active Inventories : " + inventory);
+
+		boolean isSpaceAvailableOnLocation = locationSpaceCheck(fetchedLocation, fetchedLpn, inventory);
+		if (isSpaceAvailableOnLocation) {
+			inventory.setOn_hand_qty(inventory.getOn_hand_qty() + fetchedLpn.getQuantity());
+		} else {
+			logger.info("No Space for the lpn : " + fetchedLpn.getLpn_name());
+		}
+		return inventory;
+	}
+
+	public boolean locationSpaceCheck(Location fetchedLocation, Lpn fetchedLpn, Inventory inventory) {
+		String locnClass = fetchedLocation.getLocn_class();
+		String locnBrcd = fetchedLocation.getLocn_brcd();
+		float max_qty = fetchedLocation.getMax_qty();
+		float invn_on_hand_qty = inventory.getOn_hand_qty();
+		int lpn_quantity = fetchedLpn.getQuantity();
+		boolean value = (max_qty) >= (invn_on_hand_qty + lpn_quantity);
+		if (value) {
+			if (locnClass.equals("A")) {
+				logger.info("Active Location : " + locnBrcd + " has space : " + max_qty + " - " + invn_on_hand_qty
+						+ " = " + (max_qty - invn_on_hand_qty));
+			} else {
+				logger.info("Reserve Location : " + locnBrcd + " has space : " + max_qty + " - " + invn_on_hand_qty
+						+ " = " + (max_qty - invn_on_hand_qty));
+			}
+		}
+		return value;
+	}
+
+	public List<Inventory> getExistingInventories(String locn_brcd, String locn_class, Session currentSession) {
+		Query<Inventory> query = currentSession.createQuery(
+				"from Inventory i where i.location.locnBrcd = :locnBrcd and i.location.locnClass = :locnClass",
+				Inventory.class);
+		query.setParameter("locnBrcd", locn_brcd);
+		query.setParameter("locnClass", locn_class);
+		List<Inventory> existingInventories = query.getResultList();
+		logger.info("Existing Inventories : {}", existingInventories);
+		return existingInventories;
+	}
+
+	public Session currentSession() {
+		Session currentSession = entityManager.unwrap(Session.class);
+		return currentSession;
+	}
+
+	public <T> void setForeignChecks(Session currentSession, int value, Class<T> class1) {
+		Query<Inventory> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = " + value + "",
+				Inventory.class);
+		query.executeUpdate();
+	}
+
+	public Lpn fetchLpn(String lpnName) throws ClientProtocolException, IOException {
+		String serviceName = "lpns";
+		Lpn mappedLpn = fetchData(serviceName, lpnName, Lpn.class);
+		return mappedLpn;
+	}
+
+	public Location fetchLocation(String locnBrcd) throws ClientProtocolException, IOException {
+		String serviceName = "locations";
+		Location mappedLocation = fetchData(serviceName, locnBrcd, Location.class);
+		return mappedLocation;
+	}
+
+	public Item fetchItem(String itemName) throws ClientProtocolException, IOException {
+		String serviceName = "items";
+		Item mappedItem = fetchData(serviceName, itemName, Item.class);
+		return mappedItem;
+	}
+
+	public boolean canFitInLocation(Lpn lpn, Location location, String locnClass) {
+		return lpn.getLength() <= location.getLength() && lpn.getWidth() <= location.getWidth()
+				&& lpn.getHeight() <= location.getHeight() && lpn.getQuantity() <= availableSpaceOnLocation(location)
+				&& lpn.getVolume() <= location.getMax_volume() && location.getLocn_class().equals(locnClass)
+				&& lpn.getLpn_facility_status() != LpnFacilityStatusContants.CONSUMED_TO_ACTIVE;
+	}
+
+	public int availableSpaceOnLocation(Location location) {
+		int availableSpaceOnLocation = (int) (location.getMax_qty() - location.getOccupied_qty());
+		return availableSpaceOnLocation;
+	}
+
+	public <T> T fetchData(String serviceName, String value, Class<T> class1)
+			throws ClientProtocolException, IOException {
+		String json = fetch(serviceName, value);
+		logger.info("json data :" + json);
+		T t = returnType(json, class1);
+		return t;
+	}
+
+	public String fetch(String serviceName, String value) throws ClientProtocolException, IOException {
+		String url = getUrl(serviceName) + value;
+		String json = restGetCall(url);
+		return json;
+	}
+
+	public <T> T returnType(String json, Class<T> class1) throws JsonMappingException, JsonProcessingException {
+		objectMapper.setSerializationInclusion(Include.NON_NULL);
+		T t = objectMapper.readValue(json, class1);
+		return t;
+	}
+
+	public String restGetCall(String url) throws ClientProtocolException, IOException {
+		logger.info("URL :" + url);
+		HttpGet request = new HttpGet(url);
+		HttpResponse response = httpClient.execute(request);
+		logger.info("Response : " + response.getStatusLine());
+		HttpEntity entity = response.getEntity();
+		String json = EntityUtils.toString(entity);
+		return json;
+	}
+
+	public String getUrl(String serviceName) {
+		if (serviceName != null) {
+			String url = "http://localhost:8085/" + serviceName + "/list/by-name/";
+			return url;
+		}
+		return null;
+	}
+
+	@Override
 	public Iterable<Inventory> viewAllInventory() {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Inventory> query = currentSession.createQuery("from Inventory", Inventory.class);
-		logger.info("Query : " + query.toString());
+		logger.info("Query : " + query.getQueryString());
 
 		List<Inventory> listInventories = query.getResultList();
 		for (Iterator<Inventory> iterator = listInventories.iterator(); iterator.hasNext();) {
@@ -337,6 +462,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		query.setParameter("lpn_name", lpn_name);
 
 		try {
+			logger.info("{}", query.getResultList());
 			Inventory inventoryCase = query.getSingleResult();
 			logger.info("inventoryCase : " + inventoryCase);
 			return inventoryCase;
@@ -348,14 +474,32 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 
 	@Override
 	public List<Inventory> getInventorybyItem(Item item) {
+		List<Inventory> inventories = new ArrayList<>();
 		logger.info("" + item);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession.createQuery("from Inventory i where i.item.description = :description",
-				Inventory.class);
-		query.setParameter("description", item.getDescription());
+		String itemName = item.getItemName();
+		String description = item.getDescription();
+		String queryString = "";
 
+		if (item.getDescription() != null) {
+			queryString = "from Inventory i where i.item.description = :description and i.locn_class = :locn_class";
+		} else {
+			queryString = "from Inventory i where i.item.itemName = :itemName and i.locn_class = :locn_class";
+
+		}
+		Query<Inventory> query = currentSession.createQuery(queryString, Inventory.class);
+		query.setParameter("locn_class", "A");
+
+		if (item.getDescription() != null) {
+			query.setParameter("description", description);
+		} else {
+			query.setParameter("itemName", itemName);
+
+		}
 		try {
-			return query.getResultList();
+			inventories = query.getResultList();
+			logger.info("getInventorybyitem : {}", inventories);
+			return inventories;
 		} catch (NoResultException e) {
 			// Handle the exception here
 			return null;
@@ -385,7 +529,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		Inventory inventory = getInventoryByLpn(lpn_name);
 		currentSession.delete(inventory);
 	}
-	
 
 	public Inventory updateInventoryQty(Inventory inventory, int adjustQty) {
 
@@ -403,25 +546,106 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	}
 
 	@Override
-	public void updateInventory(Lpn lpn) {
+	public void updateInventory(Lpn lpn, Location location, String locnClass, Session currentSession) {
 		Inventory fetchedInventory = getInventoryByLpn(lpn.getLpn_name());
-		Session currentSession1 = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession1.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Inventory.class);
-		query.executeUpdate();
 		if (lpn != null) {
 //			fetchedInventory.setLpn(lpn);
 			fetchedInventory.setItem(lpn.getItem());
 			fetchedInventory.setOn_hand_qty(lpn.getQuantity());
-			fetchedInventory.setCreated_dttm(lpn.getCreated_dttm());
-			fetchedInventory.setLast_updated_dttm(lpn.getLast_updated_dttm());
-			fetchedInventory.setCreated_source(lpn.getCreated_source());
-			fetchedInventory.setLast_updated_source(lpn.getLast_updated_source());	
-			fetchedInventory.setLocation(null);
-			fetchedInventory.setLocn_class(null);
-			logger.info("Updating Inventory : "+fetchedInventory);
-			currentSession1.merge(fetchedInventory);
-			logger.info("Updated Inventory : "+fetchedInventory);
+//			fetchedInventory.setCreated_dttm(lpn.getCreated_dttm());
+			fetchedInventory.setLast_updated_dttm(LocalDateTime.now());
+//			fetchedInventory.setCreated_source(lpn.getCreated_source());
+			fetchedInventory.setLast_updated_source(lpn.getLast_updated_source());
+			if (location != null && locnClass != null) {
+				fetchedInventory.setLocation(location);
+				fetchedInventory.setLocn_class(locnClass);
+			} else {
+				fetchedInventory.setLocation(null);
+				fetchedInventory.setLocn_class(null);
+			}
+			logger.info("Updating Inventory : " + fetchedInventory);
+			currentSession.merge(fetchedInventory);
+			logger.info("Updated Inventory : " + fetchedInventory);
 		}
 	}
 
+	@Override
+	public String createActiveInventoryFromSop(Item item, Location location)
+			throws ClientProtocolException, IOException {
+
+		Session currentSession = entityManager.unwrap(Session.class);
+		String itemName = item.getItemName();
+		Item fetchedItem = fetchItem(itemName);
+		String locnBrcd = location.getLocn_brcd();
+		Location fetchedLocation = fetchLocation(locnBrcd);
+		logger.info("Fetched Lpn" + fetchedItem);
+		logger.info("Fetched Location" + fetchedLocation);
+
+		String reponseInv = "";
+		String source = "SOP";
+		String locnClass = fetchedLocation.getLocn_class();
+		Inventory inventory = createNewActiveInventory(fetchedItem, fetchedLocation, locnClass, 0, source);
+		logger.info("Inventory created by SOP : " + inventory);
+
+		saveSOPData(currentSession, inventory);
+		logger.info("Saved Inventory created by SOP : " + inventory);
+
+		reponseInv = "Saved Inventory created by SOP : " + inventory;
+
+		return reponseInv;
+
+	}
+
+	@Override
+	public List<Inventory> getExistingInventories(String locnBrcd, String locnClass) {
+		Session currentSession = currentSession();
+		return getExistingInventories(locnBrcd, locnClass, currentSession);
+	}
+
+//	@Override
+//	public void deleteActiveInventoryByLocation(String locnBrcd, String locnClass) {
+//		Session currentSession = currentSession();
+//		Query<Inventory> query = currentSession.createQuery(
+//				"from Inventory i where i.location.locnBrcd = :locnBrcd and i.location.locnClass = :locnClass",
+//				Inventory.class);
+//		query.setParameter("locnBrcd", locnBrcd);
+//		query.setParameter("locnClass", locnClass);
+//		List<Inventory> existingInventories = query.getResultList();
+//		logger.info("Existing Inventories : {}",existingInventories);
+//		for (Inventory inventory : existingInventories) {
+//			currentSession.delete(inventory);
+//		}
+//		logger.info("Active Inventory Deleted");
+//	}
+
+	@Override
+	public void deleteActiveInventoryByLocation(String locnBrcd, String locnClass) {
+		Session currentSession = currentSession();
+		Transaction transaction = null;
+		logger.info(locnBrcd,locnClass);
+		try {
+			// Start a transaction
+			transaction = currentSession.beginTransaction();
+
+			// Create a bulk delete query
+			Query query = currentSession.createQuery(
+					"delete from Inventory i where i.location.locnBrcd = :locnBrcd and i.location.locnClass = :locnClass");
+			query.setParameter("locnBrcd", locnBrcd);
+			query.setParameter("locnClass", locnClass);
+
+			// Execute the delete operation
+			int result = query.executeUpdate();
+			logger.info("Deleted {} active inventory(s) for location: {} and class: {}", result, locnBrcd, locnClass);
+
+			// Commit the transaction
+			transaction.commit();
+		} catch (Exception e) {
+			if (transaction != null) {
+				transaction.rollback(); // Rollback in case of an error
+			}
+			logger.error("Error deleting active inventory: {}", e.getMessage(), e);
+		} finally {
+			currentSession.close(); // Ensure the session is closed
+		}
+	}
 }

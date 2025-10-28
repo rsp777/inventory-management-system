@@ -7,10 +7,13 @@ import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.hibernate.Session;
 
+import com.pawar.inventory.exceptions.InventoryNotFoundException;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
+
+import jakarta.persistence.NoResultException;
 
 
 public interface InventoryRepository {
@@ -24,5 +27,9 @@ public interface InventoryRepository {
 	public void deleteByInventoryLpn(String lpn_name);
 	public List<Inventory> getInventoryByLocation(Location location);
 	public Inventory updateInventoryQty(Inventory inventory,int adjustQty);
-	public void updateInventory(Lpn lpn);	
+	public void updateInventory(Lpn lpn, Location location, String locnClass,Session currentSession);
+	public Object checkActiveInventory(Object object) throws InventoryNotFoundException,NoResultException;
+	public String createActiveInventoryFromSop(Item item, Location location) throws ClientProtocolException, IOException;
+	public List<Inventory> getExistingInventories(String locnBrcd, String locnClass);
+	public void deleteActiveInventoryByLocation(String locnBrcd, String locnClass);
 }

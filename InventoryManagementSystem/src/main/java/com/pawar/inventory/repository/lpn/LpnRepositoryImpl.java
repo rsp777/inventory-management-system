@@ -10,17 +10,22 @@ import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.pawar.inventory.constants.AsnStatusConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
 import com.pawar.inventory.exceptions.LpnNotFoundException;
+import com.pawar.inventory.model.ASN;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
+import com.pawar.inventory.repository.asn.ASNRepository;
+import com.pawar.inventory.repository.inventory.InventoryRepository;
 import com.pawar.inventory.repository.item.ItemRepository;
 import com.pawar.inventory.repository.item.ItemRepositoryImpl;
+import com.pawar.inventory.repository.location.LocationRepository;
 import com.pawar.inventory.service.InventoryService;
 import com.pawar.inventory.service.LocationService;
 
@@ -36,27 +41,28 @@ public class LpnRepositoryImpl implements LpnRepository {
 	@Autowired
 	ItemRepository itemRepository;
 
-	// @Autowired
-	InventoryService inventoryService;
+	@Autowired
+	private InventoryRepository inventoryRepository;
 
-	LocationService locationService;
+	@Autowired
+	private LocationRepository locationRepository;
 
-	public LpnRepositoryImpl(EntityManager entityManager, InventoryService inventoryService,
-			LocationService locationService) {
+	@Autowired
+	private ASNRepository asnRepository;
+
+	public LpnRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
-		this.inventoryService = inventoryService;
-		this.locationService = locationService;
 	}
 
 	@Override
 	public Lpn createLpn(Lpn lpn, Item item)
 			throws ItemNotFoundException, CategoryNotFoundException, LpnNotFoundException {
 
-		Item fetchedItem = itemRepository.findItemByname(item.getItem_name());
+		Item fetchedItem = itemRepository.findItemByName(item.getItemName());
 		Lpn fetchedLpn = getLpnByName(lpn.getLpn_name());
 		logger.info("" + fetchedItem);
 		logger.info("fetchedLpn : " + fetchedLpn);
-		if (fetchedItem.getItem_name() == null || fetchedItem.getDescription() == null
+		if (fetchedItem.getItemName() == null || fetchedItem.getDescription() == null
 				|| fetchedItem.getCategory() == null) {
 			logger.info("Item name, description and category cannot be null.");
 
@@ -70,26 +76,17 @@ public class LpnRepositoryImpl implements LpnRepository {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<Lpn> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Lpn.class);
 		query.executeUpdate();
-		// // Check to see if the Category object already exists in the database.
-		// Category existingCategory = currentSession.get(Category.class,
-		// category.getId());
-		//
-		// // If the Category object does not exist in the database, save it to the
-		// database.
-//		if (fetchedItem == null) {
-//			currentSession.save(lpn);
-//		}
 
 		if (fetchedLpn != null && (fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CONSUMED_TO_ACTIVE
 				|| fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CANCELLED)) {
 
 			fetchedLpn.setItem(fetchedItem);
 			fetchedLpn.setQuantity(lpn.getQuantity());
-			fetchedLpn.setLpn_facility_status(LpnFacilityStatusContants.CREATED);
+			setLpnStatus(fetchedLpn);
 			fetchedLpn.setLength(fetchedItem.getUnit_length());
 			fetchedLpn.setWidth(fetchedItem.getUnit_width());
 			fetchedLpn.setHeight(fetchedItem.getUnit_height());
-			fetchedLpn.setVolume(fetchedItem.getUnit_height());
+			fetchedLpn.setVolume(fetchedItem.getUnit_volume() * fetchedLpn.getQuantity());
 			fetchedLpn.setCreated_source("IMS");
 			fetchedLpn.setCreated_dttm(LocalDateTime.now());
 			fetchedLpn.setLast_updated_dttm(LocalDateTime.now());
@@ -97,13 +94,15 @@ public class LpnRepositoryImpl implements LpnRepository {
 
 			currentSession.merge(fetchedLpn);
 
-			logger.info("Lpn successfully updated : " + lpn);
-			inventoryService.createInventory(fetchedLpn, currentSession);
-			logger.info("Inventory successfully created : " + fetchedLpn);
+			logger.info("Lpn successfully updated : " + fetchedLpn);
+			if (fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CREATED) {
+				inventoryRepository.createInventory(fetchedLpn, currentSession);
+				logger.info("Inventory successfully created : " + fetchedLpn);
+			}
 
 		} else {
 			lpn.setItem(fetchedItem);
-			lpn.setLpn_facility_status(LpnFacilityStatusContants.CREATED);
+			setLpnStatus(lpn);
 			lpn.setLength(fetchedItem.getUnit_length());
 			lpn.setWidth(fetchedItem.getUnit_width());
 			lpn.setHeight(fetchedItem.getUnit_height());
@@ -118,12 +117,97 @@ public class LpnRepositoryImpl implements LpnRepository {
 			currentSession.saveOrUpdate(lpn);
 
 			logger.info("Lpn successfully added : " + lpn);
-			inventoryService.createInventory(lpn, currentSession);
-			logger.info(lpn + " inserted into Inventory");
+			if (lpn.getLpn_facility_status() == LpnFacilityStatusContants.CREATED) {
+				inventoryRepository.createInventory(lpn, currentSession);
+				logger.info("Inventory successfully created : " + lpn);
+			}
 		}
 
 		return lpn;
 
+	}
+	
+	@Override
+	public void createLpn(Lpn lpn, Item item, String asnBrcd) throws ItemNotFoundException, LpnNotFoundException {
+
+		Item fetchedItem = itemRepository.findItemByName(item.getItemName());
+		Lpn fetchedLpn = getLpnByName(lpn.getLpn_name());
+		logger.info("" + fetchedItem);
+		logger.info("fetchedLpn : " + fetchedLpn);
+		if (fetchedItem.getItemName() == null || fetchedItem.getDescription() == null
+				|| fetchedItem.getCategory() == null) {
+			logger.info("Item name, description and category cannot be null.");
+
+		}
+
+		if (fetchedItem.getUnit_length() <= 0 || fetchedItem.getUnit_width() <= 0 || fetchedItem.getUnit_height() <= 0
+				|| fetchedItem.getUnit_volume() <= 0) {
+			logger.info("Item dimensions and volume must be greater than zero.");
+
+		}
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<Lpn> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Lpn.class);
+		query.executeUpdate();
+
+		if (fetchedLpn != null && (fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CONSUMED_TO_ACTIVE
+				|| fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CANCELLED)) {
+
+			fetchedLpn.setItem(fetchedItem);
+			fetchedLpn.setAsn_brcd(asnBrcd);
+			fetchedLpn.setQuantity(lpn.getQuantity());
+			setLpnStatus(fetchedLpn);
+			fetchedLpn.setLength(fetchedItem.getUnit_length());
+			fetchedLpn.setWidth(fetchedItem.getUnit_width());
+			fetchedLpn.setHeight(fetchedItem.getUnit_height());
+			fetchedLpn.setVolume(fetchedItem.getUnit_volume() * fetchedLpn.getQuantity());
+			fetchedLpn.setCreated_source("IMS");
+			fetchedLpn.setCreated_dttm(LocalDateTime.now());
+			fetchedLpn.setLast_updated_dttm(LocalDateTime.now());
+			fetchedLpn.setLast_updated_source("IMS");
+
+			currentSession.merge(fetchedLpn);
+
+			logger.info("Lpn successfully updated : " + fetchedLpn);
+			if (fetchedLpn.getLpn_facility_status() == LpnFacilityStatusContants.CREATED) {
+				inventoryRepository.createInventory(fetchedLpn, currentSession);
+				logger.info("Inventory successfully created : " + fetchedLpn);
+			}
+
+		} else {
+			lpn.setItem(fetchedItem);
+			lpn.setAsn_brcd(asnBrcd);
+			setLpnStatus(lpn);
+			lpn.setLength(fetchedItem.getUnit_length());
+			lpn.setWidth(fetchedItem.getUnit_width());
+			lpn.setHeight(fetchedItem.getUnit_height());
+			lpn.setVolume(fetchedItem.getUnit_height());
+			lpn.setCreated_source("IMS");
+			lpn.setCreated_dttm(LocalDateTime.now());
+			lpn.setLast_updated_dttm(LocalDateTime.now());
+			lpn.setLast_updated_source("IMS");
+
+			logger.info("Lpn data : " + lpn);
+
+			currentSession.saveOrUpdate(lpn);
+
+			logger.info("Lpn successfully added : " + lpn);
+			if (lpn.getLpn_facility_status() == LpnFacilityStatusContants.CREATED) {
+				inventoryRepository.createInventory(lpn, currentSession);
+				logger.info("Inventory successfully created : " + lpn);
+			}
+		}	
+	}
+
+
+	private void setLpnStatus(Lpn lpn) {
+		if (lpn.getAsn() != null && lpn.getAsn().getAsnStatus() == AsnStatusConstants.IN_TRANSIT) {
+
+			lpn.setLpn_facility_status(LpnFacilityStatusContants.IN_TRANSIT);
+
+		} else {
+			lpn.setLpn_facility_status(LpnFacilityStatusContants.CREATED);
+
+		}
 	}
 
 	@Override
@@ -170,10 +254,25 @@ public class LpnRepositoryImpl implements LpnRepository {
 	}
 
 	@Override
+	public List<Lpn> findLpnByCategory(String categoryName) throws LpnNotFoundException {
+		Session currentSession = entityManager.unwrap(Session.class);
+		Query<Lpn> query = currentSession.createQuery("from Lpn l where l.item.category.categoryName = :categoryName and l.asn_brcd is null",
+				Lpn.class);
+		query.setParameter("categoryName", categoryName);
+
+		try {
+			return query.getResultList();
+		} catch (NoResultException e) {
+			// Handle the exception here
+			return null;
+		}
+	}
+
+	@Override
 	public Lpn updateLpnByLpnId(int lpn_id, Lpn lpn) throws ItemNotFoundException, CategoryNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		Lpn existingLpn = findLpnById(lpn_id);
-		Item existingItem = itemRepository.findItemByname(lpn.getItem().getItem_name());
+		Item existingItem = itemRepository.findItemByName(lpn.getItem().getItemName());
 		logger.info("Existing Lpn : " + existingLpn);
 		logger.info("Existing Item : " + existingItem);
 		existingLpn.setLpn_facility_status(lpn.getLpn_facility_status());
@@ -199,10 +298,10 @@ public class LpnRepositoryImpl implements LpnRepository {
 			throws ItemNotFoundException, CategoryNotFoundException, LpnNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 
-		Inventory existingInventory = inventoryService.getInventoryByLpn(lpn_name);
+		Inventory existingInventory = inventoryRepository.getInventoryByLpn(lpn_name);
 		Location existingLocation = null;
 		Lpn existingLpn = getLpnByName(lpn_name);
-		Item existingItem = itemRepository.findItemByname(lpn.getItem().getDescription());
+		Item existingItem = itemRepository.findItemByName(lpn.getItem().getDescription());
 		logger.info("Existing Lpn : " + existingLpn);
 		logger.info("Existing Item : " + existingItem);
 		logger.info("Existing Inventory : " + existingInventory);
@@ -216,25 +315,25 @@ public class LpnRepositoryImpl implements LpnRepository {
 		if (qty_adjusted != 0) {
 
 			if (existingInventory.getLocation() != null) {
-				existingLocation = locationService
+				existingLocation = locationRepository
 						.findLocationByBarcode(existingInventory.getLocation().getLocn_brcd());
 
 				logger.info("Existing Location : " + existingLocation);
 				existingLpn.setQuantity(qty_adjusted);
-				inventoryService.updateInventoryQty(existingInventory, adjustQty);
-				locationService.updateOccupiedQty(existingLocation, adjustQty);
+				inventoryRepository.updateInventoryQty(existingInventory, adjustQty);
+				locationRepository.updateOccupiedQty(existingLocation, adjustQty);
 				logger.info("Lpn, Location and Inventory quantity Inventory adjusted : " + qty_adjusted);
 
 			} else {
 				existingLpn.setQuantity(qty_adjusted);
-				inventoryService.updateInventoryQty(existingInventory, adjustQty);
+				inventoryRepository.updateInventoryQty(existingInventory, adjustQty);
 				logger.info("Lpn and Inventory quantity Inventory adjusted : " + qty_adjusted);
 			}
 		} else {
 			logger.info("qty_adjusted : " + qty_adjusted);
 			existingLpn.setLpn_facility_status(LpnFacilityStatusContants.CANCELLED);
 			existingLpn.setQuantity(qty_adjusted);
-			inventoryService.deleteByInventoryLpn(lpn_name);
+			inventoryRepository.deleteByInventoryLpn(lpn_name);
 		}
 
 		existingLpn.setLength(lpn.getLength());

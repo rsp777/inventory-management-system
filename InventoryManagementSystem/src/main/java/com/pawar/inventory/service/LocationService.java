@@ -103,4 +103,9 @@ public class LocationService {
 	public Location updateOccupiedQty(Location location,int adjustQty){
 		return locationRepository.updateOccupiedQty(location, adjustQty);
 	}
+
+	public Iterable<Location> findLocationsByRange(String fromLocation, String toLocation) {
+		// TODO Auto-generated method stub
+		return locationRepository.findLocationsByRange(fromLocation,toLocation);
+	}
 }

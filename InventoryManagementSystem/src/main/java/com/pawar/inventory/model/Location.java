@@ -24,6 +24,9 @@ public class Location {
 	@Column(name = "locn_brcd")
 	private String locnBrcd;
 	
+	@Column(name = "grp")
+	private String grp;
+	
 	@Column(name = "locn_class")
 	private String locnClass;
 	
@@ -74,12 +77,13 @@ public class Location {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Location(int locn_id, String locnBrcd, String locnClass, float length, float width, float height,
+	public Location(int locn_id, String locnBrcd,String grp, String locnClass, float length, float width, float height,
 			float maxWeight, float maxVolume, float maxQty,float occupiedQty, float currVol, float currWeight,
 			LocalDateTime createdDttm, LocalDateTime lastUpdatedDttm, String createdSource, String lastUpdatedSource) {
 		super();
 		this.locn_id = locn_id;
 		this.locnBrcd = locnBrcd;
+		this.grp = grp;
 		this.locnClass = locnClass;
 		this.length = length;
 		this.width = width;
@@ -96,6 +100,10 @@ public class Location {
 		this.lastUpdatedSource = lastUpdatedSource;
 	}
 
+	public Location(String locnBrcd) {
+		this.locnBrcd = locnBrcd;
+	}
+
 	public int getLocn_id() {
 		return locn_id;
 	}
@@ -110,6 +118,15 @@ public class Location {
 
 	public void setLocn_brcd(String locnBrcd) {
 		this.locnBrcd = locnBrcd;
+	}
+	
+	
+	public String getGrp() {
+		return grp;
+	}
+
+	public void setGrp(String grp) {
+		this.grp = grp;
 	}
 
 	public String getLocn_class() {
@@ -225,15 +242,11 @@ public class Location {
 
 	@Override
 	public String toString() {
-		return "Location [locn_id=" + locn_id + ", locnBrcd=" + locnBrcd + ", locnClass=" + locnClass + ", length="
-				+ length + ", width=" + width + ", height=" + height + ", maxWeight=" + maxWeight + ", maxVolume="
-				+ maxVolume + ", maxQty=" + maxQty + ", occupiedQty=" + occupiedQty + ", currVol=" + currVol
-				+ ", currWeight=" + currWeight + ", createdDttm=" + createdDttm + ", lastUpdatedDttm="
-				+ lastUpdatedDttm + ", createdSource=" + createdSource + ", lastUpdatedSource="
-				+ lastUpdatedSource + "]";
+		return "Location [locn_id=" + locn_id + ", locnBrcd=" + locnBrcd + ", grp=" + grp + ", locnClass=" + locnClass
+				+ ", length=" + length + ", width=" + width + ", height=" + height + ", maxWeight=" + maxWeight
+				+ ", maxVolume=" + maxVolume + ", maxQty=" + maxQty + ", occupiedQty=" + occupiedQty + ", currVol="
+				+ currVol + ", currWeight=" + currWeight + ", createdDttm=" + createdDttm + ", lastUpdatedDttm="
+				+ lastUpdatedDttm + ", createdSource=" + createdSource + ", lastUpdatedSource=" + lastUpdatedSource
+				+ "]";
 	}
-
-	
-
-
 }

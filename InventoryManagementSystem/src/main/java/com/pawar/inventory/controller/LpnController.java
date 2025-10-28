@@ -1,9 +1,10 @@
 package com.pawar.inventory.controller;
 
+import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpStatus;
@@ -28,12 +29,14 @@ import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.service.LpnService;
 
+import ch.qos.logback.classic.Level;
+
 @RestController
 @RequestMapping("/lpns")
 @EnableJpaRepositories
 public class LpnController {
 
-	private final static Logger logger = Logger.getLogger(LpnController.class.getName());
+	private final static Logger logger = LoggerFactory.getLogger(LpnController.class);
 
 	@Autowired
 	LpnService lpnService;
@@ -59,13 +62,13 @@ public class LpnController {
 			Lpn lpn2 = lpnService.createLpn(lpn, item);
 			return new ResponseEntity<Lpn>(lpn2, HttpStatus.OK);
 		} catch (LpnNotFoundException e) {
-			logger.log(Level.SEVERE, "LpnNotFoundException occurred: ", e);
+			logger.error("LpnNotFoundException occurred: ", e);
 			return new ResponseEntity<String>("LPN Not Found: " + e.getMessage(), HttpStatus.NOT_FOUND);
 		} catch (ItemNotFoundException e) {
-			logger.log(Level.SEVERE, "ItemNotFoundException occurred: ", e);
+			logger.error("ItemNotFoundException occurred: ", e);
 			return new ResponseEntity<String>("Item Not Found: " + e.getMessage(), HttpStatus.NOT_FOUND);
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Exception occurred: ", e);
+			logger.error("Exception occurred: ", e);
 			return new ResponseEntity<String>("An error occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -92,6 +95,23 @@ public class LpnController {
 	public Lpn findLpnById(@PathVariable int lpn_id) {
 		logger.info("Input Lpn Id : " + lpn_id);
 		return lpnService.findLpnById(lpn_id);
+	}
+	
+	@GetMapping("/list/category/{category}")
+	public ResponseEntity<List<Lpn>> findLpnByCategory(@PathVariable String category) {
+	    logger.info("Input category: " + category);
+	    List<Lpn> lpn;
+	    try {
+	        lpn = lpnService.findLpnByCategory(category);
+	        logger.info("Lpn by Category : {}",lpn);
+	        return ResponseEntity.ok(lpn); // Return the found LPN with HTTP 200 status
+	    } catch (LpnNotFoundException e) {
+	        logger.error("LPN not found for category: " + category, e);
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Return HTTP 404 status
+	    } catch (Exception e) {
+	        logger.error("An unexpected error occurred", e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // Return HTTP 500 status
+	    }
 	}
 
 	@PutMapping("/update/by-id/{lpn_id}")

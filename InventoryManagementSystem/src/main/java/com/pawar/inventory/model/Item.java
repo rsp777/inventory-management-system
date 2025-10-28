@@ -86,6 +86,10 @@ public class Item {
 		this.last_updated_source = last_updated_source;
 	}
 
+	public Item(String itemName) {
+		this.itemName = itemName;
+	}
+
 	public int getItem_id() {
 		return item_id;
 	}
@@ -94,11 +98,11 @@ public class Item {
 		this.item_id = item_id;
 	}
 
-	public String getItem_name() {
+	public String getItemName() {
 		return itemName;
 	}
 
-	public void setItem_name(String itemName) {
+	public void setItemName(String itemName) {
 		this.itemName = itemName;
 	}
 
@@ -191,4 +195,5 @@ public class Item {
 				+ last_updated_source + "]";
 	}
 
+	
 }

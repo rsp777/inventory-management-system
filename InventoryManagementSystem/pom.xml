@@ -10,15 +10,20 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.pawar.inventory</groupId>
-	<artifactId>InventoryManagementSystem</artifactId>
-	<version>Release_1.0</version>
-	<name>InventoryManagementSystem</name>
-	<description>InventoryManagementSystem</description>
+	<artifactId>inventory-management-system</artifactId>
+	<version>Dev_v2.2</version>
+	<name>inventory-management-system</name>
+	<description>inventory-management-system</description>
 	<properties>
 		<java.version>17</java.version>
 		<spring-cloud.version>2022.0.3</spring-cloud.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.pawar.todo</groupId>
+			<artifactId>common</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.netflix.eureka/eureka-client -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -58,6 +63,11 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+			<version>3.1.4</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java 
 		<dependency>
 			<groupId>mysql</groupId>
@@ -65,26 +75,23 @@
 			<version>8.0.33</version>
 		</dependency>-->
 
-		<!--https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client-->
+		<!--https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
 			<version>3.3.2</version>
-		</dependency> 
-		<!--<dependency>
+		</dependency> -->
+		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>8.0.33</version>
-			 protobuf-java:2.6.0 included by MySQL Connector J is not
-			compatible with
-						Google Cloud Java libraries. 
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.protobuf</groupId>
 					<artifactId>protobuf-java</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>-->
+		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
@@ -109,17 +116,29 @@
 		</dependency>
 
 
-		<!--	<dependency>
-			<groupId>de.codecentric</groupId>
-			<artifactId>spring-boot-admin-server-ui-login</artifactId>
-			<version>1.5.7</version>
+		<dependency>
+   			<groupId>de.codecentric</groupId>
+    		<artifactId>spring-boot-admin-starter-client</artifactId>
+    		<version>3.1.5</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		
-		</dependency>-->
+		</dependency>
 	</dependencies>
+	<distributionManagement>
+		<!--<repository>
+			<id>my-repo-id</id>
+			<url>http://localhost:8081/repository/maven-snapshots/</url>
+		</repository>-->
+		<repository>
+			<id>github</id>
+			<name>GitHub OWNER Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/rsp777/inventory-management-system</url>
+		</repository>
+	</distributionManagement>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -132,10 +151,42 @@
 		</dependencies>
 	</dependencyManagement>
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>17</source>
+					<target>17</target>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
