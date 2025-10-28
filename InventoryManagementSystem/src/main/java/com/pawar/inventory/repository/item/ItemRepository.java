@@ -8,7 +8,6 @@ import com.pawar.inventory.model.Item;
 public interface ItemRepository {
 	
 	public Item addItem(Item item,Category category);
-	public String createItemName(String raw_item__name_description);
 	public Iterable<Item> getfindAllItems();
 	public Item findItemByDesc(String itemDesc) throws ItemNotFoundException, CategoryNotFoundException;
 	public Item findItemById(int itemId);

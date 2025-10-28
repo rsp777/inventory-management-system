@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.pawar.inventory</groupId>
 	<artifactId>inventory-management-system</artifactId>
-	<version>Dev_v2.1</version>
+	<version>Dev_v2.2</version>
 	<name>inventory-management-system</name>
 	<description>inventory-management-system</description>
 	<properties>

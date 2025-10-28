@@ -11,8 +11,6 @@ public class CubiscanToWmsConfig {
 	@Value("${cubiscan.to.wms.realtime.unassignment.topic}")
 	private String cubiscanToWmsRealtimeUnassignmentTopic;
 	
-	@Value("${wms.to.sop.item.dims.update}")
-	private String wmsToSopItemDimsUpdate;
 
 	public String getCubiscanToWmsTopic() {
 		return cubiscanToWmsTopic;
@@ -28,13 +26,5 @@ public class CubiscanToWmsConfig {
 
 	public void setCubiscanToWmsRealtimeUnAssignmentTopic(String cubiscanToWmsRealtimeUnassignmentTopic) {
 		this.cubiscanToWmsRealtimeUnassignmentTopic = cubiscanToWmsRealtimeUnassignmentTopic;
-	}
-
-	public String getWmsToSopItemDimsUpdate() {
-		return wmsToSopItemDimsUpdate;
-	}
-
-	public void setWmsToSopItemDimsUpdate(String wmsToSopItemDimsUpdate) {
-		this.wmsToSopItemDimsUpdate = wmsToSopItemDimsUpdate;
 	}
 }

@@ -2,6 +2,7 @@ package com.pawar.inventory.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pawar.inventory.config.CubiscanToWmsConfig;
+import com.pawar.inventory.config.HostToWmsConfig;
 import com.pawar.inventory.entity.ASNDto;
 import com.pawar.inventory.entity.AssignmentModel;
 import com.pawar.inventory.entity.SopEligibleItemsDto;
@@ -40,7 +42,7 @@ public class ItemService {
 	private final static Logger logger = LoggerFactory.getLogger(ItemService.class.getName());
 	public static String WMS_ITEM_DATA_CUBISCAN;
 	public static String WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT;
-//	public static String WMS_ITEM_DIMS_SOP_UPDATE;
+	public static String WMS_ITEM_DATA_INCOMING;
 
 	private final ObjectMapper objectMapper;
 
@@ -48,11 +50,17 @@ public class ItemService {
 	private CubiscanToWmsConfig cubiscanToWmsConfig;
 
 	@Autowired
+	private HostToWmsConfig hostToWmsConfig;
+
+	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
 
 	@Autowired
 	private ItemRepository itemRepository;
-	
+
+	@Autowired
+	private CategoryService categoryService;
+
 	public ItemService() {
 		objectMapper = new ObjectMapper();
 		objectMapper.registerModule(new JavaTimeModule());
@@ -63,12 +71,13 @@ public class ItemService {
 		ItemService.WMS_ITEM_DATA_CUBISCAN = cubiscanToWmsConfig.getCubiscanToWmsTopic();
 		ItemService.WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT = cubiscanToWmsConfig
 				.getCubiscanToWmsRealtimeUnAssignmentTopic();
+		ItemService.WMS_ITEM_DATA_INCOMING = hostToWmsConfig.getWmsItemDataIncoming();
 //		ItemService.WMS_ITEM_DIMS_SOP_UPDATE = cubiscanToWmsConfig.getWmsToSopItemDimsUpdate();
 	}
 
 	@Transactional
 	@KafkaListener(topics = "#{@itemService.WMS_ITEM_DATA_CUBISCAN}", groupId = "consumer_group5")
-	public void incomingItemListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
+	public void incomingItemCubicanListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
 //		String key = consumerRecord.key();
 		String value = consumerRecord.value();
@@ -82,18 +91,19 @@ public class ItemService {
 		try {
 			Item existingItem = findItemByName(item.getItemName());
 			Item itemWithNewDims = setItemDims(existingItem, item);
-			
+
 			logger.info("Cubiscan Dims Set for Item : {}", itemWithNewDims);
-			
+
 			String item_name = itemWithNewDims.getItemName();
 			logger.info("item_name : {}", item_name);
 			itemRepository.updateItemByItemName(itemWithNewDims);
 
-			AssignmentModel realTimeAssignModel = convertToAssignmentModel("UNASSIGN","REALTIMEUNASSIGN",existingItem.getItemName());
-			kafkaTemplate.send(WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT, objectMapper.writeValueAsString(realTimeAssignModel));
+			AssignmentModel realTimeAssignModel = convertToAssignmentModel("UNASSIGN", "REALTIMEUNASSIGN",
+					existingItem.getItemName());
+			kafkaTemplate.send(WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT,
+					objectMapper.writeValueAsString(realTimeAssignModel));
 			logger.info("Data sent to Topic : {} for sop eligible item dims update",
 					WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT);
-			
 
 		} catch (CategoryNotFoundException e) {
 			logger.error("Category Not Found : {}", e.getMessage());
@@ -105,16 +115,16 @@ public class ItemService {
 			logger.error("Error processing Kafka message: {}", e.getMessage());
 		}
 	}
-	
-	private AssignmentModel convertToAssignmentModel(String sopActionType,String batchType,String itemName) {
-		AssignmentModel realTimeAssignModel = new AssignmentModel(sopActionType,batchType, itemName);
+
+	private AssignmentModel convertToAssignmentModel(String sopActionType, String batchType, String itemName) {
+		AssignmentModel realTimeAssignModel = new AssignmentModel(sopActionType, batchType, itemName);
 		realTimeAssignModel.setSopActionType(sopActionType);
 		realTimeAssignModel.setBatchType(batchType);
 		realTimeAssignModel.setItemName(itemName);
 		return realTimeAssignModel;
-		
+
 	}
-	
+
 //	private SopEligibleItemsDto convertItemToSopEligbleItemsDto(Item item) {
 //		SopEligibleItemsDto sopEligibleItemsDto = new SopEligibleItemsDto();
 //		sopEligibleItemsDto.setItem_id(item.getItem_id());
@@ -126,8 +136,7 @@ public class ItemService {
 //		sopEligibleItemsDto.setLastUpdatedSource(item.getLast_updated_source());
 //		return sopEligibleItemsDto;
 //	}
-	
-	
+
 	private Item setItemDims(Item existingItem, Item item) {
 		if (existingItem != null && item != null) {
 			existingItem.setItemName(item.getItemName());
@@ -141,6 +150,34 @@ public class ItemService {
 			return null;
 		}
 	}
+
+	@Transactional
+	@KafkaListener(topics = "#{@itemService.WMS_ITEM_DATA_INCOMING}", groupId = "consumer_group5")
+	public void incomingItemListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
+			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
+		String value = consumerRecord.value();
+
+		logger.info("Incoming payload : {}", value);
+		Item item = objectMapper.readValue(value, Item.class);
+		Category category = categoryService.getCategoryByName(item.getCategory().getCategory_name());
+
+		logger.info("Incoming New Item : {}", item);
+		try {
+			Item existingItem = findItemByName(item.getItemName());
+			if (existingItem != null) {
+				logger.info("Item already present in the wms");
+			}
+
+		} catch (ItemNotFoundException e) {
+			logger.error("Item Not Found : {}", e.getMessage());
+			logger.info("Item is not present in the wms, creating new item");
+			addItem(item, category);
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error("Error processing Kafka message: {}", e.getMessage());
+		}
+	}
+
 	@Transactional
 	public Item addItem(Item item, Category category) {
 
@@ -157,12 +194,6 @@ public class ItemService {
 	public Item findItemByDesc(String itemDesc) throws ItemNotFoundException, CategoryNotFoundException {
 		Item item = itemRepository.findItemByDesc(itemDesc);
 
-//		if (item == null) {
-//			throw new ItemNotFoundException("Item Not Found : "+itemName);
-//		} 
-//		else {
-//			return item;
-//		}
 		return item;
 	}
 
@@ -179,8 +210,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	public Item updateItemByItemName(Item item)
-			throws ItemNotFoundException, CategoryNotFoundException {
+	public Item updateItemByItemName(Item item) throws ItemNotFoundException, CategoryNotFoundException {
 		// TODO Auto-generated method stub
 		return itemRepository.updateItemByItemName(item);
 	}
@@ -234,9 +264,8 @@ public class ItemService {
 		Item item = itemRepository.findItemByName(itemName);
 
 		if (item == null) {
-			throw new ItemNotFoundException("Item Not Found : "+itemName);
-		} 
-		else {
+			throw new ItemNotFoundException("Item Not Found : " + itemName);
+		} else {
 			return item;
 		}
 	}

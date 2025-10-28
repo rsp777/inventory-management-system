@@ -48,20 +48,12 @@ public class ItemRepositoryImpl implements ItemRepository {
 			Session currentSession = entityManager.unwrap(Session.class);
 			Query<Item> query = currentSession.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1", Item.class);
 			query.executeUpdate();
-//			// Check to see if the Category object already exists in the database.
-//		    Category existingCategory = currentSession.get(Category.class, category.getId());
-			//
-//		    // If the Category object does not exist in the database, save it to the database.
-//			if (fetchedCategory == null) {
-//				logger.info("Category is null");
-//				return;
-//			}
-			item.setItemName(createItemName(item.getDescription()));
+
+			item.setItemName(item.getItemName());
 			item.setUnit_volume(item.getUnit_length() * item.getUnit_width() * item.getUnit_height());
 			item.setCategory(fetchedCategory);
 			item.setCreated_dttm(LocalDateTime.now());
 			item.setLast_updated_dttm(LocalDateTime.now());
-//			System.out.println("item.getLast_updated_source() != null : "+item.getLast_updated_source() != null);
 			if (item.getLast_updated_source() != null && item.getCreated_source() != null) {
 				item.setCreated_source(item.getCreated_source());
 				item.setLast_updated_source(item.getLast_updated_source());
@@ -74,7 +66,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 			logger.info("Item successfully added : " + item);
 			return item;
 		} else {
-			logger.info("Item addition failed : " + item);
+			logger.info("Item addition failed : " + item.getItemName());
 			return item;
 		}
 	}
@@ -96,44 +88,6 @@ public class ItemRepositoryImpl implements ItemRepository {
 		}
 		result = attr && dims;
 		return result;
-	}
-
-	@Override
-	public String createItemName(String raw_item__name_description) {
-
-		String brand = null;
-		String model = null;
-		String variant = null;
-		String brandCode = null;
-		String modelCode = null;
-		String digits = null;
-
-		if (raw_item__name_description.contains(" ")) {
-			String[] parts = raw_item__name_description.split(" ", 3);
-			brand = parts[0];
-			model = parts[1];
-			variant = (parts.length > 2) ? parts[2] : "";
-			brandCode = brand.substring(0, Math.min(brand.length(), 4)).toUpperCase();
-
-			// Keep only the first character of each word in the model name
-			modelCode = model.replaceAll("(\\p{Alnum})\\p{Alnum}*", "$1");
-			digits = raw_item__name_description.replaceAll("\\D", "");
-			if (!digits.isEmpty()) {
-
-				modelCode += digits;// .substring(0, 0);
-			}
-			// If a variant exists, append its first character to the model code
-			if (!variant.isEmpty()) {
-				modelCode += variant.substring(0, 1);
-			}
-
-			// Append the first digit in the input to the model code
-			String item_name = brandCode + "-" + modelCode;
-			logger.info("Item Name  : " + item_name);
-			return item_name;
-		}
-		return raw_item__name_description.toUpperCase();
-
 	}
 
 	@Override
@@ -211,8 +165,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	}
 
 	@Override
-	public Item updateItemByItemName(Item item)
-			throws ItemNotFoundException, CategoryNotFoundException {
+	public Item updateItemByItemName(Item item) throws ItemNotFoundException, CategoryNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
 		logger.info("item : " + item);
 		logger.info("item_name : " + item.getItemName());
