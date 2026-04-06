@@ -46,7 +46,7 @@ public class ASNService {
 	}
 
 	@Transactional
-	@KafkaListener(topics = WMS_ASN_DATA_INCOMING, groupId = "consumer_group5")
+	@KafkaListener(id = WMS_ASN_DATA_INCOMING,topics = WMS_ASN_DATA_INCOMING, groupId = "consumer_group5")
 	public void incomingASNListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
 		String key = consumerRecord.key();

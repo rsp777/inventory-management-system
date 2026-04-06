@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.pawar.inventory</groupId>
 	<artifactId>inventory-management-system</artifactId>
-	<version>Dev_v2.2</version>
+	<version>Dev_v2.6</version>
 	<name>inventory-management-system</name>
 	<description>inventory-management-system</description>
 	<properties>
@@ -23,6 +23,11 @@
 			<groupId>com.pawar.todo</groupId>
 			<artifactId>common</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.pawar.inventory</groupId>
+			<artifactId>kafka-listener-control-lib</artifactId>
+			<version>Dev_v1.0</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.netflix.eureka/eureka-client -->
 		<dependency>
@@ -128,6 +133,13 @@
 		
 		</dependency>
 	</dependencies>
+	<repositories>
+    <repository>
+        <id>github-kafka-listener-control</id>
+        <name>GitHub Apache Maven Packages - Kafka Listener Control</name>
+        <url>https://maven.pkg.github.com/rsp777/kafka-listener-control-lib</url>
+    </repository>
+</repositories>
 	<distributionManagement>
 		<!--<repository>
 			<id>my-repo-id</id>
@@ -137,7 +149,7 @@
 			<id>github</id>
 			<name>GitHub OWNER Apache Maven Packages</name>
 			<url>https://maven.pkg.github.com/rsp777/inventory-management-system</url>
-		</repository>
+		</repository>	
 	</distributionManagement>
 	<dependencyManagement>
 		<dependencies>
@@ -172,10 +184,6 @@
 					<source>17</source>
 					<target>17</target>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
