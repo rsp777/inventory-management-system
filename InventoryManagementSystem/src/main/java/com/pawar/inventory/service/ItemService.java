@@ -76,7 +76,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	@KafkaListener(topics = "#{@itemService.WMS_ITEM_DATA_CUBISCAN}", groupId = "consumer_group5")
+	@KafkaListener(id ="#{@itemService.WMS_ITEM_DATA_CUBISCAN}",topics = "#{@itemService.WMS_ITEM_DATA_CUBISCAN}", groupId = "consumer_group5")
 	public void incomingItemCubicanListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
 //		String key = consumerRecord.key();
@@ -152,7 +152,7 @@ public class ItemService {
 	}
 
 	@Transactional
-	@KafkaListener(topics = "#{@itemService.WMS_ITEM_DATA_INCOMING}", groupId = "consumer_group5")
+	@KafkaListener(id = "#{@itemService.WMS_ITEM_DATA_INCOMING}",topics = "#{@itemService.WMS_ITEM_DATA_INCOMING}", groupId = "consumer_group5")
 	public void incomingItemListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
 		String value = consumerRecord.value();
