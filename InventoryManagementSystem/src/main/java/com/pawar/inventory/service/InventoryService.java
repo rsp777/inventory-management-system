@@ -1,5 +1,7 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -7,11 +9,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
 import org.hibernate.Session;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.InventoryNotFoundException;
@@ -23,26 +23,27 @@ import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.inventory.InventoryRepository;
 
 import jakarta.persistence.NoResultException;
-
-@Service
+@Dependent
 public class InventoryService {
 
 	private final static Logger logger = Logger.getLogger(InventoryService.class.getName());
 
-	@Autowired
-	InventoryRepository inventoryRepository;
+	private final InventoryRepository inventoryRepository;
+	private final ItemService itemService;
+	private final LocationService locationService;
+	private final ASNService asnService;
+	private final LpnService lpnService;
 
-	@Autowired
-	ItemService itemService;
+	@Inject
 
-	@Autowired
-	LocationService locationService;
-	
-	@Autowired
-	ASNService asnService;
-	
-	@Autowired
-	LpnService lpnService;
+	public InventoryService(InventoryRepository inventoryRepository, ItemService itemService,
+			LocationService locationService, ASNService asnService, LpnService lpnService) {
+		this.inventoryRepository = inventoryRepository;
+		this.itemService = itemService;
+		this.locationService = locationService;
+		this.asnService = asnService;
+		this.lpnService = lpnService;
+	}
 	
 	@Transactional
 	public Inventory createInventory(Lpn lpn,Session currentSession) {
@@ -61,7 +62,7 @@ public class InventoryService {
 	}
 
 	@Transactional
-	public String createActiveInventory(Lpn lpn, Location locn) throws ClientProtocolException, IOException {
+	public String createActiveInventory(Lpn lpn, Location locn) throws IOException {
 		logger.info("Replenishment of Active Location : " + lpn.getLpn_name());
 		return inventoryRepository.createActiveInventory(lpn, locn);
 	}
@@ -109,7 +110,7 @@ public class InventoryService {
 		return inventoryRepository.checkActiveInventory(object);
 	}
 
-	public String createActiveInventoryFromSop(Item item, Location location) throws ClientProtocolException, IOException {
+	public String createActiveInventoryFromSop(Item item, Location location) throws IOException {
 		// TODO Auto-generated method stub
 		return inventoryRepository.createActiveInventoryFromSop(item,location);
 	}
@@ -123,3 +124,4 @@ public class InventoryService {
 		
 	}
 }
+

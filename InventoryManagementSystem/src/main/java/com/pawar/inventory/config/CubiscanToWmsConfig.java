@@ -1,14 +1,13 @@
 package com.pawar.inventory.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-@Component
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+@ApplicationScoped
 public class CubiscanToWmsConfig {
-	@Value("${cubiscan.to.wms.topic}")
+	@ConfigProperty(name = "cubiscan.to.wms.topic")
 	private String  cubiscanToWmsTopic;
 
-	@Value("${cubiscan.to.wms.realtime.unassignment.topic}")
+	@ConfigProperty(name = "cubiscan.to.wms.realtime.unassignment.topic")
 	private String cubiscanToWmsRealtimeUnassignmentTopic;
 	
 

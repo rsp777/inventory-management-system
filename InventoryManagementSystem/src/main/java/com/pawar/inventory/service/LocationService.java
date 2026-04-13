@@ -1,22 +1,26 @@
 package com.pawar.inventory.service;
 
-import java.util.logging.Logger;
+import jakarta.enterprise.context.Dependent;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.logging.Logger;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.repository.location.LocationRepository;
-
-@Service
+@Dependent
 public class LocationService {
 
 	private final static Logger logger = Logger.getLogger(LocationService.class.getName());
 
-	@Autowired
-	private LocationRepository locationRepository;
+	private final LocationRepository locationRepository;
+
+	@Inject
+
+	public LocationService(LocationRepository locationRepository) {
+		this.locationRepository = locationRepository;
+	}
 
 	@Transactional
 	public Location createLocation(Location location) {
@@ -109,3 +113,4 @@ public class LocationService {
 		return locationRepository.findLocationsByRange(fromLocation,toLocation);
 	}
 }
+

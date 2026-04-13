@@ -1,29 +1,24 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.util.logging.Logger;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.pawar.inventory.controller.GrpController;
-import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.GrpAlreadyExistsException;
 import com.pawar.inventory.exceptions.GrpNotFoundException;
-import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Grp;
-import com.pawar.inventory.repository.category.CategoryRepository;
 import com.pawar.inventory.repository.grp.GrpRepository;
-
-@Service
+@Dependent
 public class GrpService {
 
 	private final static Logger logger = Logger.getLogger(GrpService.class.getName());
 
-	@Autowired
-	private GrpRepository grpRepository;
+	private final GrpRepository grpRepository;
 
-	@Autowired
+	@Inject
+
 	public GrpService(GrpRepository grpRepository) {
 		this.grpRepository = grpRepository;
 	}
@@ -80,3 +75,4 @@ public class GrpService {
 		}
 	}
 }
+

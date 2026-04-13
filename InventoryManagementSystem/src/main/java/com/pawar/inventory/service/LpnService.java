@@ -1,11 +1,11 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.util.List;
 import java.util.logging.Logger;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
@@ -14,14 +14,18 @@ import com.pawar.inventory.model.ASN;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.lpn.LpnRepository;
-
-@Service
+@Dependent
 public class LpnService {
 
 	private final static Logger logger = Logger.getLogger(LpnService.class.getName());
 
-	@Autowired
-	private LpnRepository lpnRepository;
+	private final LpnRepository lpnRepository;
+
+	@Inject
+
+	public LpnService(LpnRepository lpnRepository) {
+		this.lpnRepository = lpnRepository;
+	}
 	
 	
 	
@@ -88,3 +92,4 @@ public class LpnService {
 	}
 
 }
+

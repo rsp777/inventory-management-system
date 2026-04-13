@@ -1,66 +1,44 @@
 package com.pawar.inventory.repository.inventory;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pawar.inventory.constants.LocationClassConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
 import com.pawar.inventory.exceptions.InventoryNotFoundException;
+import com.pawar.inventory.integration.InventoryLookupGateway;
 import com.pawar.inventory.model.Inventory;
 import com.pawar.inventory.model.Item;
 import com.pawar.inventory.model.Location;
 import com.pawar.inventory.model.Lpn;
-import com.pawar.inventory.repository.item.ItemRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class InventoryRepositoryImpl implements InventoryRepository {
 
 	private final static Logger logger = LoggerFactory.getLogger(InventoryRepositoryImpl.class);
-	private EntityManager entityManager;
-	private final HttpClient httpClient;
-	private final ObjectMapper objectMapper;
+	private final EntityManager entityManager;
+	private final InventoryLookupGateway inventoryLookupGateway;
 
-	// LpnService lpnService;
-	//
-	// @Autowired
-	// LocationService locationService;
+	@Inject
 
-	@Autowired
-	private ItemRepository itemRepository;
-
-	public InventoryRepositoryImpl(EntityManager entityManager) {
+	public InventoryRepositoryImpl(EntityManager entityManager, InventoryLookupGateway inventoryLookupGateway) {
 		this.entityManager = entityManager;
-		httpClient = HttpClients.createDefault();
-		objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
+		this.inventoryLookupGateway = inventoryLookupGateway;
 	}
 
 	@Override
@@ -93,8 +71,8 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		logger.info("Reserve inventory : " + lpn + " " + location);
 		String lpnName = lpn.getLpn_name();
 		String locnBrcd = location.getLocn_brcd();
-		Lpn fetchedLpn = fetchLpn(lpnName);
-		Location fetchedLocation = fetchLocation(locnBrcd);
+		Lpn fetchedLpn = inventoryLookupGateway.fetchLpn(lpnName);
+		Location fetchedLocation = inventoryLookupGateway.fetchLocation(locnBrcd);
 		Inventory inventory = getInventoryByLpn(lpnName);
 		logger.info("Fetched Lpn " + fetchedLpn);
 		logger.info("Fetched Location " + fetchedLocation);
@@ -134,11 +112,11 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	}
 
 	@Override
-	public String createActiveInventory(Lpn lpn, Location location) throws ClientProtocolException, IOException {
+	public String createActiveInventory(Lpn lpn, Location location) throws IOException {
 		String lpnName = lpn.getLpn_name();
-		Lpn fetchedLpn = fetchLpn(lpnName);
+		Lpn fetchedLpn = inventoryLookupGateway.fetchLpn(lpnName);
 		String locnBrcd = location.getLocn_brcd();
-		Location fetchedLocation = fetchLocation(locnBrcd);
+		Location fetchedLocation = inventoryLookupGateway.fetchLocation(locnBrcd);
 		logger.info("Fetched Lpn" + fetchedLpn);
 		logger.info("Fetched Location" + fetchedLocation);
 		String reponseInv = "";
@@ -371,24 +349,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		query.executeUpdate();
 	}
 
-	public Lpn fetchLpn(String lpnName) throws ClientProtocolException, IOException {
-		String serviceName = "lpns";
-		Lpn mappedLpn = fetchData(serviceName, lpnName, Lpn.class);
-		return mappedLpn;
-	}
-
-	public Location fetchLocation(String locnBrcd) throws ClientProtocolException, IOException {
-		String serviceName = "locations";
-		Location mappedLocation = fetchData(serviceName, locnBrcd, Location.class);
-		return mappedLocation;
-	}
-
-	public Item fetchItem(String itemName) throws ClientProtocolException, IOException {
-		String serviceName = "items";
-		Item mappedItem = fetchData(serviceName, itemName, Item.class);
-		return mappedItem;
-	}
-
 	public boolean canFitInLocation(Lpn lpn, Location location, String locnClass) {
 		return lpn.getLength() <= location.getLength() && lpn.getWidth() <= location.getWidth()
 				&& lpn.getHeight() <= location.getHeight() && lpn.getQuantity() <= availableSpaceOnLocation(location)
@@ -401,48 +361,10 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		return availableSpaceOnLocation;
 	}
 
-	public <T> T fetchData(String serviceName, String value, Class<T> class1)
-			throws ClientProtocolException, IOException {
-		String json = fetch(serviceName, value);
-		logger.info("json data :" + json);
-		T t = returnType(json, class1);
-		return t;
-	}
-
-	public String fetch(String serviceName, String value) throws ClientProtocolException, IOException {
-		String url = getUrl(serviceName) + value;
-		String json = restGetCall(url);
-		return json;
-	}
-
-	public <T> T returnType(String json, Class<T> class1) throws JsonMappingException, JsonProcessingException {
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		T t = objectMapper.readValue(json, class1);
-		return t;
-	}
-
-	public String restGetCall(String url) throws ClientProtocolException, IOException {
-		logger.info("URL :" + url);
-		HttpGet request = new HttpGet(url);
-		HttpResponse response = httpClient.execute(request);
-		logger.info("Response : " + response.getStatusLine());
-		HttpEntity entity = response.getEntity();
-		String json = EntityUtils.toString(entity);
-		return json;
-	}
-
-	public String getUrl(String serviceName) {
-		if (serviceName != null) {
-			String url = "http://localhost:8085/" + serviceName + "/list/by-name/";
-			return url;
-		}
-		return null;
-	}
-
 	@Override
 	public Iterable<Inventory> viewAllInventory() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession.createQuery("from Inventory", Inventory.class);
+		Query<Inventory> query = currentSession.createQuery("select i from Inventory i", Inventory.class);
 		logger.info("Query : " + query.getQueryString());
 
 		List<Inventory> listInventories = query.getResultList();
@@ -457,7 +379,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	public Inventory getInventoryByLpn(String lpn_name) {
 		logger.info("" + lpn_name);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession.createQuery("from Inventory i where i.lpn.lpn_name = :lpn_name",
+		Query<Inventory> query = currentSession.createQuery("select i from Inventory i where i.lpn.lpn_name = :lpn_name",
 				Inventory.class);
 		query.setParameter("lpn_name", lpn_name);
 
@@ -510,7 +432,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 	public List<Inventory> getInventoryByLocation(Location location) {
 		logger.info("" + location);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Inventory> query = currentSession.createQuery("from Inventory i where i.location.locnBrcd = :locnBrcd",
+		Query<Inventory> query = currentSession.createQuery("select i from Inventory i where i.location.locnBrcd = :locnBrcd",
 				Inventory.class);
 		query.setParameter("locnBrcd", location.getLocn_brcd());
 
@@ -571,13 +493,13 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 
 	@Override
 	public String createActiveInventoryFromSop(Item item, Location location)
-			throws ClientProtocolException, IOException {
+			throws IOException {
 
 		Session currentSession = entityManager.unwrap(Session.class);
 		String itemName = item.getItemName();
-		Item fetchedItem = fetchItem(itemName);
+		Item fetchedItem = inventoryLookupGateway.fetchItem(itemName);
 		String locnBrcd = location.getLocn_brcd();
-		Location fetchedLocation = fetchLocation(locnBrcd);
+		Location fetchedLocation = inventoryLookupGateway.fetchLocation(locnBrcd);
 		logger.info("Fetched Lpn" + fetchedItem);
 		logger.info("Fetched Location" + fetchedLocation);
 
@@ -639,7 +561,7 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 
 			// Commit the transaction
 			transaction.commit();
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			if (transaction != null) {
 				transaction.rollback(); // Rollback in case of an error
 			}
@@ -649,3 +571,4 @@ public class InventoryRepositoryImpl implements InventoryRepository {
 		}
 	}
 }
+

@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.lpn;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
@@ -7,8 +9,7 @@ import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
 import com.pawar.inventory.constants.AsnStatusConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
@@ -31,27 +32,25 @@ import com.pawar.inventory.service.LocationService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class LpnRepositoryImpl implements LpnRepository {
 
 	private final static Logger logger = Logger.getLogger(LpnRepositoryImpl.class.getName());
-	private EntityManager entityManager;
+	private final EntityManager entityManager;
+	private final ItemRepository itemRepository;
+	private final InventoryRepository inventoryRepository;
+	private final LocationRepository locationRepository;
+	private final ASNRepository asnRepository;
 
-	@Autowired
-	ItemRepository itemRepository;
+	@Inject
 
-	@Autowired
-	private InventoryRepository inventoryRepository;
-
-	@Autowired
-	private LocationRepository locationRepository;
-
-	@Autowired
-	private ASNRepository asnRepository;
-
-	public LpnRepositoryImpl(EntityManager entityManager) {
+	public LpnRepositoryImpl(EntityManager entityManager, ItemRepository itemRepository,
+			InventoryRepository inventoryRepository, LocationRepository locationRepository, ASNRepository asnRepository) {
 		this.entityManager = entityManager;
+		this.itemRepository = itemRepository;
+		this.inventoryRepository = inventoryRepository;
+		this.locationRepository = locationRepository;
+		this.asnRepository = asnRepository;
 	}
 
 	@Override
@@ -213,7 +212,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	@Override
 	public Iterable<Lpn> getfindAllLpns() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Lpn> query = currentSession.createQuery("from Lpn", Lpn.class);
+		Query<Lpn> query = currentSession.createQuery("select l from Lpn l", Lpn.class);
 		logger.info("Query : " + query.toString());
 
 		List<Lpn> listLpns = query.getResultList();
@@ -228,7 +227,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	public Lpn getLpnByName(String lpn_name) throws LpnNotFoundException {
 		logger.info("" + lpn_name);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Lpn> query = currentSession.createQuery("from Lpn where lpn_name = :lpn_name", Lpn.class);
+		Query<Lpn> query = currentSession.createQuery("select l from Lpn l where l.lpn_name = :lpn_name", Lpn.class);
 		query.setParameter("lpn_name", lpn_name);
 
 		try {
@@ -242,7 +241,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	@Override
 	public Lpn findLpnById(int lpn_id) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Lpn> query = currentSession.createQuery("from Lpn where lpn_id = :lpn_id", Lpn.class);
+		Query<Lpn> query = currentSession.createQuery("select l from Lpn l where l.lpn_id = :lpn_id", Lpn.class);
 		query.setParameter("lpn_id", lpn_id);
 
 		try {
@@ -256,7 +255,7 @@ public class LpnRepositoryImpl implements LpnRepository {
 	@Override
 	public List<Lpn> findLpnByCategory(String categoryName) throws LpnNotFoundException {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Lpn> query = currentSession.createQuery("from Lpn l where l.item.category.categoryName = :categoryName and l.asn_brcd is null",
+		Query<Lpn> query = currentSession.createQuery("select l from Lpn l where l.item.category.categoryName = :categoryName and l.asn_brcd is null",
 				Lpn.class);
 		query.setParameter("categoryName", categoryName);
 
@@ -383,3 +382,4 @@ public class LpnRepositoryImpl implements LpnRepository {
 	}
 
 }
+

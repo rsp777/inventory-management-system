@@ -12,12 +12,14 @@
  -->
 <!DOCTYPE logback>
 <configuration>
+    <property resource="logging.properties"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{yyyy-MM-dd HH:mm:ss} [%thread] %level %logger{0} - %msg \(%file:%line\)%n</pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>${APP_CONSOLE_THRESHOLD:-INFO}</level>
         </filter>
     </appender>
  
@@ -32,11 +34,13 @@
         </encoder>
     </appender>
 
-    <root level="INFO" additivity="true">
+    <root level="${ROOT_LOG_LEVEL:-INFO}" additivity="true">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
-<logger name="org.springframework" level="ON" />
-	<logger name="org.apache" level="OFF" />
-	<logger name="kafka" level="OFF" />
+    <logger name="org.springframework" level="${SPRING_LOG_LEVEL:-OFF}" />
+    <logger name="org.apache" level="${APACHE_LOG_LEVEL:-OFF}" />
+    <logger name="kafka" level="${KAFKA_LOG_LEVEL:-OFF}" />
+    <logger name="org.hibernate.SQL" level="${HIBERNATE_SQL_LOG_LEVEL:-DEBUG}" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="${HIBERNATE_BIND_LOG_LEVEL:-TRACE}" />
 </configuration>

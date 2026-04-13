@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.asn;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -7,9 +9,8 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 import com.pawar.inventory.constants.AsnStatusConstants;
 import com.pawar.inventory.constants.LpnFacilityStatusContants;
@@ -25,27 +26,27 @@ import com.pawar.inventory.repository.inventory.InventoryRepository;
 import com.pawar.inventory.repository.lpn.LpnRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class ASNRepositoryImpl implements ASNRepository {
 
 	private final static Logger logger = LoggerFactory.getLogger(ASNRepositoryImpl.class);
-	private EntityManager entityManager;
+	private final EntityManager entityManager;
+	private final Provider<LpnRepository> lpnRepositoryProvider;
+	private final InventoryRepository inventoryRepository;
 
-	@Autowired
-	@Lazy
-	LpnRepository lpnRepository;
+	@Inject
 
-	@Autowired
-	InventoryRepository inventoryRepository;
-
-	public ASNRepositoryImpl(EntityManager entityManager) {
+	public ASNRepositoryImpl(EntityManager entityManager, Provider<LpnRepository> lpnRepositoryProvider,
+			InventoryRepository inventoryRepository) {
 		this.entityManager = entityManager;
+		this.lpnRepositoryProvider = lpnRepositoryProvider;
+		this.inventoryRepository = inventoryRepository;
 	}
 
 	@Override
 	public ASN createASN(ASN asn) throws ItemNotFoundException, CategoryNotFoundException, LpnNotFoundException,
 			NoResultException, ASNNotFoundException {
+		LpnRepository lpnRepository = lpnRepositoryProvider.get();
 		List<Lpn> lpns = asn.getLpns();
 		boolean isASNPresent = isASNPresent(asn);
 		Session currentSession = entityManager.unwrap(Session.class);
@@ -75,7 +76,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 	public ASN getASNByName(String asnBrcd) throws NoResultException, ASNNotFoundException {
 		logger.info("asnBrcd : {}", asnBrcd);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<ASN> query = currentSession.createQuery("from ASN where asnBrcd = :asnBrcd", ASN.class);
+		Query<ASN> query = currentSession.createQuery("select a from ASN a where a.asnBrcd = :asnBrcd", ASN.class);
 		query.setParameter("asnBrcd", asnBrcd);
 		try {
 			return query.getSingleResult();
@@ -99,6 +100,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 	}
 
 	public boolean isLpnsPresent(List<Lpn> lpns) throws LpnNotFoundException, NullPointerException {
+		LpnRepository lpnRepository = lpnRepositoryProvider.get();
 		if (lpns == null || lpns.isEmpty()) {
 			return false;
 		}
@@ -119,6 +121,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 	@Override
 	public String receiveAsn(ASN asn, List<Lpn> lpns)
 			throws LpnNotFoundException, NoResultException, ASNNotFoundException {
+		LpnRepository lpnRepository = lpnRepositoryProvider.get();
 		Session currentSession = entityManager.unwrap(Session.class);
 		String response = "";
 		if (asn.getAsnBrcd() != "" && asn.getAsnBrcd() != null && lpns != null) {
@@ -161,7 +164,9 @@ public class ASNRepositoryImpl implements ASNRepository {
 		logger.info("Get ASN of Category : {}", category);
 		Session currentSession = entityManager.unwrap(Session.class);
 		Query<ASN> query = currentSession.createQuery(
-				"from ASN a join fetch a.lpns l join fetch l.item i where i.category.categoryName = :category and l.asn_brcd is not null",
+				"select distinct a from ASN a join fetch a.lpns join fetch a.lpns.item "
+						+ "where exists (select 1 from Lpn l where l member of a.lpns "
+						+ "and l.item.category.categoryName = :category and l.asn_brcd is not null)",
 				ASN.class);
 		query.setParameter("category", category);
 		List<ASN> asnList = query.getResultList();
@@ -177,7 +182,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 //	@Override
 //	public Iterable<Lpn> getfindAllLpns() {
 //		Session currentSession = entityManager.unwrap(Session.class);
-//		Query<Lpn> query = currentSession.createQuery("from Lpn", Lpn.class);
+//		Query<Lpn> query = currentSession.createQuery("select l from Lpn l", Lpn.class);
 //		logger.info("Query : " + query.toString());
 //
 //		List<Lpn> listLpns = query.getResultList();
@@ -192,7 +197,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 //	public Lpn getLpnByName(String lpn_name) throws LpnNotFoundException {
 //		logger.info("" + lpn_name);
 //		Session currentSession = entityManager.unwrap(Session.class);
-//		Query<Lpn> query = currentSession.createQuery("from Lpn where lpn_name = :lpn_name", Lpn.class);
+//		Query<Lpn> query = currentSession.createQuery("select l from Lpn l where l.lpn_name = :lpn_name", Lpn.class);
 //		query.setParameter("lpn_name", lpn_name);
 //
 //		try {
@@ -206,7 +211,7 @@ public class ASNRepositoryImpl implements ASNRepository {
 //	@Override
 //	public Lpn findLpnById(int lpn_id) {
 //		Session currentSession = entityManager.unwrap(Session.class);
-//		Query<Lpn> query = currentSession.createQuery("from Lpn where lpn_id = :lpn_id", Lpn.class);
+//		Query<Lpn> query = currentSession.createQuery("select l from Lpn l where l.lpn_id = :lpn_id", Lpn.class);
 //		query.setParameter("lpn_id", lpn_id);
 //
 //		try {
@@ -332,3 +337,4 @@ public class ASNRepositoryImpl implements ASNRepository {
 //	}
 
 }
+

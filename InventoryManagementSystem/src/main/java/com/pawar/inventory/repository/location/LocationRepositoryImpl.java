@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.location;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
@@ -7,8 +9,7 @@ import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Item;
@@ -16,12 +17,13 @@ import com.pawar.inventory.model.Location;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class LocationRepositoryImpl implements LocationRepository {
 
 	private final static Logger logger = Logger.getLogger(LocationRepositoryImpl.class.getName());
 	private EntityManager entityManager;
+
+	@Inject
 
 	public LocationRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
@@ -67,7 +69,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 	@Override
 	public Iterable<Location> getfindAlllocations() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Location> query = currentSession.createQuery("from Location", Location.class);
+		Query<Location> query = currentSession.createQuery("select l from Location l", Location.class);
 		logger.info("Query : " + query.toString());
 		List<Location> listLocations = query.getResultList();
 		for (Iterator<Location> iterator = listLocations.iterator(); iterator.hasNext();) {
@@ -100,7 +102,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 	public Location findLocationByBarcode(String location_name) {
 		logger.info("" + location_name);
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Location> query = currentSession.createQuery("from Location where locnBrcd = :locnBrcd", Location.class);
+		Query<Location> query = currentSession.createQuery("select l from Location l where l.locnBrcd = :locnBrcd", Location.class);
 		query.setParameter("locnBrcd", location_name);
 
 		try {
@@ -115,7 +117,7 @@ public class LocationRepositoryImpl implements LocationRepository {
 	@Override
 	public Location findLocationById(int locn_id) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Location> query = currentSession.createQuery("from Location where locn_id = :locn_id", Location.class);
+		Query<Location> query = currentSession.createQuery("select l from Location l where l.locn_id = :locn_id", Location.class);
 		query.setParameter("locn_id", locn_id);
 
 		try {
@@ -201,3 +203,4 @@ public class LocationRepositoryImpl implements LocationRepository {
 		return location;
 	}
 }
+

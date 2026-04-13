@@ -2,10 +2,6 @@ package com.pawar.inventory.repository.asn;
 
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
-
 import com.pawar.inventory.exceptions.ASNNotFoundException;
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
@@ -25,3 +21,4 @@ public interface ASNRepository {
 
 	List<ASN> getAsnByCategory(String category);
 }
+

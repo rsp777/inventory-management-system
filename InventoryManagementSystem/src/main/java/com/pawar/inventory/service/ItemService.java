@@ -1,25 +1,20 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.kafka.support.SendResult;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pawar.inventory.config.CubiscanToWmsConfig;
 import com.pawar.inventory.config.HostToWmsConfig;
 import com.pawar.inventory.entity.ASNDto;
@@ -35,8 +30,7 @@ import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.item.ItemRepository;
 
 import jakarta.annotation.PostConstruct;
-
-@Service
+@Dependent
 public class ItemService {
 
 	private final static Logger logger = LoggerFactory.getLogger(ItemService.class.getName());
@@ -45,25 +39,21 @@ public class ItemService {
 	public static String WMS_ITEM_DATA_INCOMING;
 
 	private final ObjectMapper objectMapper;
+    private final CubiscanToWmsConfig cubiscanToWmsConfig;
+    private final HostToWmsConfig hostToWmsConfig;
+    private final ItemRepository itemRepository;
+    private final CategoryService categoryService;
 
-	@Autowired
-	private CubiscanToWmsConfig cubiscanToWmsConfig;
+	@Inject
 
-	@Autowired
-	private HostToWmsConfig hostToWmsConfig;
-
-	@Autowired
-	private KafkaTemplate<String, String> kafkaTemplate;
-
-	@Autowired
-	private ItemRepository itemRepository;
-
-	@Autowired
-	private CategoryService categoryService;
-
-	public ItemService() {
-		objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
+	public ItemService(CubiscanToWmsConfig cubiscanToWmsConfig, HostToWmsConfig hostToWmsConfig,
+			ItemRepository itemRepository,
+			CategoryService categoryService, ObjectMapper objectMapper) {
+		this.cubiscanToWmsConfig = cubiscanToWmsConfig;
+		this.hostToWmsConfig = hostToWmsConfig;
+		this.itemRepository = itemRepository;
+		this.categoryService = categoryService;
+		this.objectMapper = objectMapper;
 	}
 
 	@PostConstruct
@@ -76,17 +66,10 @@ public class ItemService {
 	}
 
 	@Transactional
-	@KafkaListener(id ="#{@itemService.WMS_ITEM_DATA_CUBISCAN}",topics = "#{@itemService.WMS_ITEM_DATA_CUBISCAN}", groupId = "consumer_group5")
-	public void incomingItemCubicanListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
+	public void incomingItemCubicanListener(String value)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
-//		String key = consumerRecord.key();
-		String value = consumerRecord.value();
-//		int partition = consumerRecord.partition();
-//		logger.info("Ack : {}", ack);
 		logger.info("Incoming payload : {}", value);
 		Item item = objectMapper.readValue(value, Item.class);
-//		logger.debug("value : {}", value);
-//		logger.debug("Consumed message : " + item + " with key : " + key + " from partition : " + partition);
 		logger.info("Incoming Item values : {}", item);
 		try {
 			Item existingItem = findItemByName(item.getItemName());
@@ -100,9 +83,7 @@ public class ItemService {
 
 			AssignmentModel realTimeAssignModel = convertToAssignmentModel("UNASSIGN", "REALTIMEUNASSIGN",
 					existingItem.getItemName());
-			kafkaTemplate.send(WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT,
-					objectMapper.writeValueAsString(realTimeAssignModel));
-			logger.info("Data sent to Topic : {} for sop eligible item dims update",
+			logger.info("Generated realtime unassignment payload for topic {}",
 					WMS_ITEM_CUBISCAN_REALTIME_UNASSIGNMENT);
 
 		} catch (CategoryNotFoundException e) {
@@ -110,7 +91,7 @@ public class ItemService {
 
 		} catch (ItemNotFoundException e) {
 			logger.error("Item Not Found : {}", e.getMessage());
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			logger.error("Error processing Kafka message: {}", e.getMessage());
 		}
@@ -152,11 +133,8 @@ public class ItemService {
 	}
 
 	@Transactional
-	@KafkaListener(id = "#{@itemService.WMS_ITEM_DATA_INCOMING}",topics = "#{@itemService.WMS_ITEM_DATA_INCOMING}", groupId = "consumer_group5")
-	public void incomingItemListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
+	public void incomingItemListener(String value)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
-		String value = consumerRecord.value();
-
 		logger.info("Incoming payload : {}", value);
 		Item item = objectMapper.readValue(value, Item.class);
 		Category category = categoryService.getCategoryByName(item.getCategory().getCategory_name());
@@ -172,7 +150,7 @@ public class ItemService {
 			logger.error("Item Not Found : {}", e.getMessage());
 			logger.info("Item is not present in the wms, creating new item");
 			addItem(item, category);
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			logger.error("Error processing Kafka message: {}", e.getMessage());
 		}
@@ -271,3 +249,4 @@ public class ItemService {
 	}
 
 }
+

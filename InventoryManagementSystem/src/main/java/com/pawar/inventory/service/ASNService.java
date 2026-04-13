@@ -1,21 +1,18 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.pawar.inventory.constants.AsnStatusConstants;
 import com.pawar.inventory.entity.ASNDto;
 import com.pawar.inventory.exceptions.ASNNotFoundException;
@@ -27,8 +24,7 @@ import com.pawar.inventory.model.Lpn;
 import com.pawar.inventory.repository.asn.ASNRepository;
 
 import jakarta.persistence.NoResultException;
-
-@Service
+@Dependent
 public class ASNService {
 
 	private final static Logger logger = LoggerFactory.getLogger(ASNService.class);
@@ -36,29 +32,23 @@ public class ASNService {
 	private static final String WMS_ASN_DATA_INCOMING = "WMS.ASN.DATA.INCOMING";
 
 	private final ObjectMapper objectMapper;
+	private final ASNRepository asnRepository;
 
-	@Autowired
-	private ASNRepository asnRepository;
+	@Inject
 
-	public ASNService() {
-		objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
+	public ASNService(ASNRepository asnRepository, ObjectMapper objectMapper) {
+		this.asnRepository = asnRepository;
+		this.objectMapper = objectMapper;
 	}
 
 	@Transactional
-	@KafkaListener(id = WMS_ASN_DATA_INCOMING,topics = WMS_ASN_DATA_INCOMING, groupId = "consumer_group5")
-	public void incomingASNListener(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack)
+	public void incomingASNListener(String value)
 			throws JsonMappingException, JsonProcessingException, ItemNotFoundException, CategoryNotFoundException {
-		String key = consumerRecord.key();
-		String value = consumerRecord.value();
-		int partition = consumerRecord.partition();
 		logger.info("Incoming payload : {}",value);
 		ASNDto asnDto = objectMapper.readValue(value, ASNDto.class);
 		ASN asn = convertAsnDtoToEntity(asnDto);
 		List<Lpn> lpns = objectMapper.convertValue(asn.getLpns(),objectMapper.getTypeFactory().constructCollectionType(List.class, Lpn.class));
 		String asnBrcd = asnDto.getAsnBrcd();
-		logger.debug("value : {}", value);
-		logger.debug("Consumed message : " + asnDto + " with key : " + key + " from partition : " + partition);
 		logger.info("Incoming ASN : {}", asnBrcd);
 		try {
 			createASN(asnDto);
@@ -70,7 +60,9 @@ public class ASNService {
 			logger.error("Item Not Found : {}", e.getMessage());
 		} catch (LpnNotFoundException e) {
 			logger.error("Lpn Not Found : {}", e.getMessage());
-		} catch (Exception e) {
+		} catch (ASNNotFoundException e) {
+			logger.error("ASN Not Found : {}", e.getMessage());
+		} catch (RuntimeException e) {
 			e.printStackTrace();
 			logger.error("Error processing Kafka message: {}", e.getMessage());
 		}
@@ -119,3 +111,4 @@ public class ASNService {
 	}
 
 }
+

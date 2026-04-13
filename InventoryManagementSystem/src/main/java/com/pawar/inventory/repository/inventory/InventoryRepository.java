@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
 import org.hibernate.Session;
 
 import com.pawar.inventory.exceptions.InventoryNotFoundException;
@@ -20,7 +19,7 @@ public interface InventoryRepository {
 
 	public Inventory createInventory(Lpn lpn,Session currentSession);
 	public String createReserveInventory(Lpn lpn,Location location) throws ParseException, IOException;
-	public String createActiveInventory(Lpn lpn,Location location) throws ClientProtocolException, IOException;
+	public String createActiveInventory(Lpn lpn,Location location) throws IOException;
 	public Iterable<Inventory> viewAllInventory();
 	public Inventory getInventoryByLpn(String lpn_name);
 	public List<Inventory> getInventorybyItem(Item item);
@@ -29,7 +28,7 @@ public interface InventoryRepository {
 	public Inventory updateInventoryQty(Inventory inventory,int adjustQty);
 	public void updateInventory(Lpn lpn, Location location, String locnClass,Session currentSession);
 	public Object checkActiveInventory(Object object) throws InventoryNotFoundException,NoResultException;
-	public String createActiveInventoryFromSop(Item item, Location location) throws ClientProtocolException, IOException;
+	public String createActiveInventoryFromSop(Item item, Location location) throws IOException;
 	public List<Inventory> getExistingInventories(String locnBrcd, String locnClass);
 	public void deleteActiveInventoryByLocation(String locnBrcd, String locnClass);
 }

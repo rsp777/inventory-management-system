@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.grp;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -9,19 +11,20 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
 import com.pawar.inventory.exceptions.GrpAlreadyExistsException;
 import com.pawar.inventory.model.Grp;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class GrpRepositoryImpl implements GrpRepository {
 
 	private EntityManager entityManager;
 	private final Logger logger = LoggerFactory.getLogger(GrpRepositoryImpl.class.getName());
+
+	@Inject
 
 	public GrpRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
@@ -77,7 +80,7 @@ public class GrpRepositoryImpl implements GrpRepository {
 	@Override
 	public Iterable<Grp> getfindAllGrps() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Grp> query = currentSession.createQuery("from Grp", Grp.class);
+		Query<Grp> query = currentSession.createQuery("select g from Grp g", Grp.class);
 		List<Grp> listCategories = query.getResultList();
 		logger.info("" + listCategories);
 		return listCategories;
@@ -86,7 +89,7 @@ public class GrpRepositoryImpl implements GrpRepository {
 	@Override
 	public Grp getGrpByName(String grpName) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Grp> query = currentSession.createQuery("from Grp where grpName = :grpName", Grp.class);
+		Query<Grp> query = currentSession.createQuery("select g from Grp g where g.grpName = :grpName", Grp.class);
 		query.setParameter("grpName", grpName);
 
 		try {
@@ -100,7 +103,7 @@ public class GrpRepositoryImpl implements GrpRepository {
 	@Override
 	public Grp getGrpByDesc(String grpDesc) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Grp> query = currentSession.createQuery("from Grp where grpDesc = :grpDesc", Grp.class);
+		Query<Grp> query = currentSession.createQuery("select g from Grp g where g.grpDesc = :grpDesc", Grp.class);
 		query.setParameter("grpDesc", grpDesc);
 
 		try {
@@ -114,7 +117,7 @@ public class GrpRepositoryImpl implements GrpRepository {
 	@Override
 	public Grp getGrpById(int id) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Grp> query = currentSession.createQuery("from Grp where id = :id", Grp.class);
+		Query<Grp> query = currentSession.createQuery("select g from Grp g where g.id = :id", Grp.class);
 		query.setParameter("id", id);
 
 		try {
@@ -164,3 +167,4 @@ public class GrpRepositoryImpl implements GrpRepository {
 	}
 
 }
+

@@ -1,11 +1,10 @@
 package com.pawar.inventory.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-@Component
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+@ApplicationScoped
 public class HostToWmsConfig {
-	@Value("${wms.item.data.incoming}")
+	@ConfigProperty(name = "wms.item.data.incoming")
 	private String  wmsItemDataIncoming;
 
 	public String getWmsItemDataIncoming() {

@@ -1,24 +1,27 @@
 package com.pawar.inventory.repository.category;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Inventory;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class CategoryRepositoryImpl implements CategoryRepository {
 
 	private EntityManager entityManager;
 	private final Logger logger = Logger.getLogger(CategoryRepositoryImpl.class.getName());
+
+	@Inject
 
 	public CategoryRepositoryImpl(EntityManager entityManager) {
 		this.entityManager = entityManager;
@@ -38,7 +41,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 	@Override
 	public Iterable<Category> getfindAllCategories() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Category> query = currentSession.createQuery("from Category", Category.class);
+		Query<Category> query = currentSession.createQuery("select c from Category c", Category.class);
 		List<Category> listCategories = query.getResultList();
 		logger.info(""+listCategories);
 		return listCategories;
@@ -47,7 +50,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 	@Override
 	public Category getCategoryByName(String category_name) {
 	    Session currentSession = entityManager.unwrap(Session.class);
-	    Query<Category> query = currentSession.createQuery("from Category where categoryName = :categoryName", Category.class);
+	    Query<Category> query = currentSession.createQuery("select c from Category c where c.categoryName = :categoryName", Category.class);
 	    query.setParameter("categoryName", category_name);
 
 	    try {
@@ -61,7 +64,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 	@Override
 	public Category getCategoryById(int category_id) {
 		Session currentSession = entityManager.unwrap(Session.class);
-	    Query<Category> query = currentSession.createQuery("from Category where categoryId = :categoryId", Category.class);
+	    Query<Category> query = currentSession.createQuery("select c from Category c where c.categoryId = :categoryId", Category.class);
 	    query.setParameter("categoryId", category_id);
 
 	    try {
@@ -111,3 +114,4 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 	}
 
 }
+

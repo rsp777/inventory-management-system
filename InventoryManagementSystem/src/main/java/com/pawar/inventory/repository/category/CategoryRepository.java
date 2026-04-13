@@ -3,7 +3,6 @@ package com.pawar.inventory.repository.category;
 
 import com.pawar.inventory.model.Category;
 
-//@Repository
 public interface CategoryRepository {//extends CrudRepository<Category, Integer>{
 	
 	public Category addCategory(Category category);

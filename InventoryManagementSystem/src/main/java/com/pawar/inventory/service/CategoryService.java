@@ -1,26 +1,24 @@
 package com.pawar.inventory.service;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.util.List;
 import java.util.logging.Logger;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.repository.category.CategoryRepository;
-
-@Service
+@Dependent
 public class CategoryService {
 
 	private final static Logger logger = Logger.getLogger(CategoryService.class.getName());
 
-	@Autowired
-	private CategoryRepository categoryRepository;
+	private final CategoryRepository categoryRepository;
 
-	@Autowired
+	@Inject
+
 	public CategoryService(CategoryRepository categoryRepository) {
 
 		this.categoryRepository = categoryRepository;
@@ -91,3 +89,4 @@ public class CategoryService {
 	}
 
 }
+

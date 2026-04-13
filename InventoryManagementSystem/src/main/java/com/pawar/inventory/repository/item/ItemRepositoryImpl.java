@@ -1,5 +1,7 @@
 package com.pawar.inventory.repository.item;
 
+import jakarta.enterprise.context.Dependent;
+
 import java.lang.*;
 import java.sql.Date;
 import java.time.LocalDateTime;
@@ -10,8 +12,7 @@ import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
+import jakarta.inject.Inject;
 
 import com.pawar.inventory.exceptions.CategoryNotFoundException;
 import com.pawar.inventory.exceptions.ItemNotFoundException;
@@ -23,18 +24,18 @@ import com.pawar.inventory.service.ItemService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-
-@Repository
+@Dependent
 public class ItemRepositoryImpl implements ItemRepository {
 
 	private final static Logger logger = Logger.getLogger(ItemRepositoryImpl.class.getName());
-	private EntityManager entityManager;
+	private final EntityManager entityManager;
+	private final CategoryRepository categoryRepository;
 
-	@Autowired
-	CategoryRepository categoryRepository;
+	@Inject
 
-	public ItemRepositoryImpl(EntityManager entityManager) {
+	public ItemRepositoryImpl(EntityManager entityManager, CategoryRepository categoryRepository) {
 		this.entityManager = entityManager;
+		this.categoryRepository = categoryRepository;
 	}
 
 	@Override
@@ -93,7 +94,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	@Override
 	public Iterable<Item> getfindAllItems() {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Item> query = currentSession.createQuery("from Item", Item.class);
+		Query<Item> query = currentSession.createQuery("select i from Item i", Item.class);
 		logger.info("Query : " + query.toString());
 
 		List<Item> listItems = query.getResultList();
@@ -113,7 +114,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 		}
 
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Item> query = currentSession.createQuery("from Item where description = :description", Item.class);
+		Query<Item> query = currentSession.createQuery("select i from Item i where i.description = :description", Item.class);
 		query.setParameter("description", itemDesc);
 
 		List<Item> items = query.getResultList();
@@ -133,7 +134,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 	@Override
 	public Item findItemById(int itemId) {
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Item> query = currentSession.createQuery("from Item where item_id = :item_id", Item.class);
+		Query<Item> query = currentSession.createQuery("select i from Item i where i.item_id = :item_id", Item.class);
 		query.setParameter("item_id", itemId);
 
 		try {
@@ -218,7 +219,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 		logger.info("" + itemName);
 
 		Session currentSession = entityManager.unwrap(Session.class);
-		Query<Item> query = currentSession.createQuery("from Item where itemName = :itemName", Item.class);
+		Query<Item> query = currentSession.createQuery("select i from Item i where i.itemName = :itemName", Item.class);
 		query.setParameter("itemName", itemName);
 
 		List<Item> items = query.getResultList();
