@@ -24,9 +24,9 @@
     </appender>
  
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/inventory.log</file>
+        <file>${jboss.server.log.dir:-logs}/inventory.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/inventory.log.%d{yyyy-MM-dd}.log.tar.gz</fileNamePattern>
+            <fileNamePattern>${jboss.server.log.dir:-logs}/inventory.log.%d{yyyy-MM-dd}.log.tar.gz</fileNamePattern>
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -38,9 +38,9 @@
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
-    <logger name="org.springframework" level="${SPRING_LOG_LEVEL:-OFF}" />
+    <logger name="org.springframework" level="${SPRING_LOG_LEVEL:-ON}" />
     <logger name="org.apache" level="${APACHE_LOG_LEVEL:-OFF}" />
-    <logger name="kafka" level="${KAFKA_LOG_LEVEL:-OFF}" />
+    <logger name="kafka" level="${KAFKA_LOG_LEVEL:-ON}" />
     <logger name="org.hibernate.SQL" level="${HIBERNATE_SQL_LOG_LEVEL:-DEBUG}" />
     <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="${HIBERNATE_BIND_LOG_LEVEL:-TRACE}" />
 </configuration>
