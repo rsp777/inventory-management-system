@@ -1,6 +1,7 @@
 package com.pawar.inventory.repository.item;
 
-import jakarta.enterprise.context.Dependent;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.PersistenceContext;
 
 import java.lang.*;
 import java.sql.Date;
@@ -24,17 +25,17 @@ import com.pawar.inventory.service.ItemService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-@Dependent
+
+@Repository
 public class ItemRepositoryImpl implements ItemRepository {
 
 	private final static Logger logger = Logger.getLogger(ItemRepositoryImpl.class.getName());
-	private final EntityManager entityManager;
+	@PersistenceContext
+	private EntityManager entityManager;
 	private final CategoryRepository categoryRepository;
 
 	@Inject
-
-	public ItemRepositoryImpl(EntityManager entityManager, CategoryRepository categoryRepository) {
-		this.entityManager = entityManager;
+	public ItemRepositoryImpl(CategoryRepository categoryRepository) {
 		this.categoryRepository = categoryRepository;
 	}
 

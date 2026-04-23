@@ -1,6 +1,7 @@
 package com.pawar.inventory.repository.lpn;
 
-import jakarta.enterprise.context.Dependent;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;
@@ -32,21 +33,21 @@ import com.pawar.inventory.service.LocationService;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-@Dependent
+
+@Repository
 public class LpnRepositoryImpl implements LpnRepository {
 
 	private final static Logger logger = Logger.getLogger(LpnRepositoryImpl.class.getName());
-	private final EntityManager entityManager;
+	@PersistenceContext
+	private EntityManager entityManager;
 	private final ItemRepository itemRepository;
 	private final InventoryRepository inventoryRepository;
 	private final LocationRepository locationRepository;
 	private final ASNRepository asnRepository;
 
 	@Inject
-
-	public LpnRepositoryImpl(EntityManager entityManager, ItemRepository itemRepository,
+	public LpnRepositoryImpl(ItemRepository itemRepository,
 			InventoryRepository inventoryRepository, LocationRepository locationRepository, ASNRepository asnRepository) {
-		this.entityManager = entityManager;
 		this.itemRepository = itemRepository;
 		this.inventoryRepository = inventoryRepository;
 		this.locationRepository = locationRepository;

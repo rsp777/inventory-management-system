@@ -1,6 +1,7 @@
 package com.pawar.inventory.repository.category;
 
-import jakarta.enterprise.context.Dependent;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.PersistenceContext;
 
 import java.util.Iterator;
 import java.util.List;
@@ -8,24 +9,19 @@ import java.util.logging.Logger;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
-import jakarta.inject.Inject;
 
 import com.pawar.inventory.model.Category;
 import com.pawar.inventory.model.Inventory;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-@Dependent
+
+@Repository
 public class CategoryRepositoryImpl implements CategoryRepository {
 
+	@PersistenceContext
 	private EntityManager entityManager;
 	private final Logger logger = Logger.getLogger(CategoryRepositoryImpl.class.getName());
-
-	@Inject
-
-	public CategoryRepositoryImpl(EntityManager entityManager) {
-		this.entityManager = entityManager;
-	}
 
 	@Override
 	public Category addCategory(Category category) {

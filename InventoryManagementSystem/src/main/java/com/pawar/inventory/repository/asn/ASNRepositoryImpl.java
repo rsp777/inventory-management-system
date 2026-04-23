@@ -1,6 +1,7 @@
 package com.pawar.inventory.repository.asn;
 
-import jakarta.enterprise.context.Dependent;
+import org.springframework.stereotype.Repository;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,19 +27,19 @@ import com.pawar.inventory.repository.inventory.InventoryRepository;
 import com.pawar.inventory.repository.lpn.LpnRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
-@Dependent
+
+@Repository
 public class ASNRepositoryImpl implements ASNRepository {
 
 	private final static Logger logger = LoggerFactory.getLogger(ASNRepositoryImpl.class);
-	private final EntityManager entityManager;
+	@PersistenceContext
+	private EntityManager entityManager;
 	private final Provider<LpnRepository> lpnRepositoryProvider;
 	private final InventoryRepository inventoryRepository;
 
 	@Inject
-
-	public ASNRepositoryImpl(EntityManager entityManager, Provider<LpnRepository> lpnRepositoryProvider,
+	public ASNRepositoryImpl(Provider<LpnRepository> lpnRepositoryProvider,
 			InventoryRepository inventoryRepository) {
-		this.entityManager = entityManager;
 		this.lpnRepositoryProvider = lpnRepositoryProvider;
 		this.inventoryRepository = inventoryRepository;
 	}
